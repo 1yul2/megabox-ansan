@@ -1,0 +1,21 @@
+import type { ApprovalStatus, ShiftType } from '../mock/communityMock';
+
+// 근무교대 유형
+export const SHIFT_TYPE_LABEL: Record<ShiftType, string> = {
+  SWAP: '교대',
+  REPLACE: '대체',
+};
+
+// 근무교대 • 휴무신청 승인 상태
+export const APPROVAL_STATUS_LABEL: Record<ApprovalStatus, string> = {
+  APPROVED: '승인',
+  REJECTED: '반려',
+  PENDING: '대기',
+};
+
+// 근무교대 • 휴무신청 승인 상태 표시 색상
+export const APPROVAL_STATUS_STYLE: Record<ApprovalStatus, string> = {
+  APPROVED: 'bg-green-100 text-green-700',
+  REJECTED: 'bg-red-100 text-red-700',
+  PENDING: 'bg-gray-100 text-gray-700',
+};

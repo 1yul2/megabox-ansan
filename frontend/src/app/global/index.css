@@ -1,0 +1,49 @@
+@import 'tailwindcss';
+
+/* Light (300) */
+@font-face {
+  font-family: 'MegaBoxLife';
+  src: url('/public/fonts/MEGABOXLIFE-LIGHT.woff2') format('woff2');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Regular (400) */
+@font-face {
+  font-family: 'MegaBoxLife';
+  src: url('/public/fonts/MEGABOXLIFE-REGULAR.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Bold (700) */
+@font-face {
+  font-family: 'MegaBoxLife';
+  src: url('/public/fonts/MEGABOXLIFE-BOLD.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@theme {
+  --font-brand: 'MegaBoxLife', sans-serif;
+}
+
+/* 3. 전체 적용 (수정해야함 필요없는데도 들어감ㅠ) */
+@layer base {
+  body {
+    @apply font-brand;
+    letter-spacing: 1px;
+  }
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none; /* IE */
+  scrollbar-width: none; /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none; /* Chrome, Safari */
+}
