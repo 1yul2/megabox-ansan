@@ -9,6 +9,7 @@ import {
   APPROVAL_STATUS_LABEL,
   APPROVAL_STATUS_STYLE,
 } from '@/features/community/model/statusLabel';
+import { PageHeader } from '@/shared/components/ui/PageHeader';
 
 export default function ShiftDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -25,12 +26,11 @@ export default function ShiftDetailPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center gap-2 text-2xl font-bold">
-        <CalendarSync />
-        <span>근무교대 / 근무대체</span>
-      </div>
-
-      <hr />
+      <PageHeader
+        icon={<CalendarSync className="size-5 text-[#351f66]" />}
+        iconBg="bg-[#351f66]/10"
+        title="근무교대 / 근무대체"
+      />
 
       <div className="flex justify-between items-center">
         <div>
