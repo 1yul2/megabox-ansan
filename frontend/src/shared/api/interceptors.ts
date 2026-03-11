@@ -7,6 +7,16 @@ import { queryClient } from './queryClient';
 import type { ErrorResponse } from '../types/apiResponse';
 import type { AxiosError, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 
+// ── 공통 인터페이스 ──────────────────────────────────────────────────────
+interface RetryConfig extends InternalAxiosRequestConfig {
+  _retry?: boolean;
+}
+
+interface RefreshTokenResponse {
+  access_token: string;
+  expires_in: number;
+}
+
 function appendFormData(formData: FormData, key: string, value: unknown) {
   if (value == null) return;
   if (value instanceof File || value instanceof Blob) {
@@ -25,11 +35,65 @@ function appendFormData(formData: FormData, key: string, value: unknown) {
   formData.append(key, String(value));
 }
 
-export const requestInterceptor = (config: InternalAxiosRequestConfig) => {
-  const { accessToken } = useAuthStore.getState();
+const BASE_URL = (import.meta.env.VITE_BASE_URL as string) || 'http://localhost:8000';
+
+/**
+ * 선제적 토큰 갱신: 만료 임박 시 401을 받기 전에 미리 refresh.
+ * 이미 갱신 중이면 진행 중인 Promise를 공유하여 중복 호출 방지.
+ */
+let proactiveRefreshPromise: Promise<string> | null = null;
+
+async function proactiveRefresh(): Promise<string> {
+  if (proactiveRefreshPromise) return proactiveRefreshPromise;
+
+  proactiveRefreshPromise = (async () => {
+    try {
+      const response = await axios.post<RefreshTokenResponse>(
+        `${BASE_URL}/api/auth/refresh`,
+        null,
+        { withCredentials: true, timeout: 5000 },
+      );
+
+      const { access_token: newAccessToken, expires_in } = response.data;
+      const { user } = useAuthStore.getState();
+
+      if (user && expires_in) {
+        useAuthStore.getState().setAuth(newAccessToken, user, expires_in);
+      } else {
+        useAuthStore.getState().setAccessToken(newAccessToken);
+      }
+
+      return newAccessToken;
+    } finally {
+      proactiveRefreshPromise = null;
+    }
+  })();
+
+  return proactiveRefreshPromise;
+}
+
+export const requestInterceptor = async (
+  config: InternalAxiosRequestConfig,
+): Promise<InternalAxiosRequestConfig> => {
+  const { accessToken, isTokenExpired } = useAuthStore.getState();
   config.headers = config.headers ?? {};
 
-  if (accessToken) {
+  // 선제적 토큰 갱신: 만료 임박 시 refresh 엔드포인트·로그인 요청 제외
+  const requestUrl = config.url ?? '';
+  const skipProactiveRefresh =
+    requestUrl.includes('/auth/refresh') || requestUrl.includes('/auth/login');
+
+  if (accessToken && isTokenExpired() && !skipProactiveRefresh) {
+    try {
+      const newToken = await proactiveRefresh();
+      (config.headers as Record<string, string>).Authorization = `Bearer ${newToken}`;
+    } catch {
+      // 선제적 갱신 실패 → 기존 토큰으로 시도, 401 시 reject interceptor에서 처리
+      if (accessToken) {
+        (config.headers as Record<string, string>).Authorization = `Bearer ${accessToken}`;
+      }
+    }
+  } else if (accessToken) {
     (config.headers as Record<string, string>).Authorization = `Bearer ${accessToken}`;
   }
 
@@ -67,15 +131,6 @@ export class ApiError extends Error {
   }
 }
 
-interface RetryConfig extends InternalAxiosRequestConfig {
-  _retry?: boolean;
-}
-
-interface RefreshTokenResponse {
-  access_token: string;
-  expires_in: number;
-}
-
 // 토큰 갱신 중 실패한 요청 큐
 let isRefreshing = false;
 let failedQueue: Array<{
@@ -104,13 +159,16 @@ export const createRejectInterceptor =
     }
 
     const { status, data: errorData } = error.response;
-    const originalRequest = error.config as RetryConfig;
+    const originalRequest = error.config as RetryConfig | undefined;
 
     switch (status) {
       case 401: {
-        // 로그인/근태 엔드포인트는 갱신 없이 즉시 에러 반환
+        // 로그인 엔드포인트 또는 기존 레거시 workstatus 엔드포인트(username/password 인증)는
+        // refresh 없이 즉시 에러 반환. kiosk/* 엔드포인트는 system JWT를 사용하므로 refresh 허용.
+        const requestUrl = error.config?.url ?? '';
         const skipRefresh =
-          error.config?.url?.includes('/auth/login') || error.config?.url?.includes('/workstatus/');
+          requestUrl.includes('/auth/login') ||
+          (requestUrl.includes('/workstatus/') && !requestUrl.includes('/workstatus/kiosk/'));
 
         if (skipRefresh) {
           const msg =
@@ -120,10 +178,10 @@ export const createRejectInterceptor =
           return Promise.reject(new ApiError(msg, 'UNAUTHORIZED', 401));
         }
 
-        const { accessToken } = useAuthStore.getState();
-
-        // Access Token 자체가 없는 경우
-        if (!accessToken) {
+        // 요청 config가 없는 경우에만 즉시 실패
+        // accessToken이 null이어도 httpOnly 쿠키에 refreshToken이 있을 수 있으므로
+        // refresh 시도를 차단하지 않음
+        if (!originalRequest) {
           clearSession();
           return Promise.reject(
             new ApiError('인증이 만료되었습니다. 다시 로그인해주세요.', 'UNAUTHORIZED', 401),
@@ -161,33 +219,35 @@ export const createRejectInterceptor =
           const response = await axios.post<RefreshTokenResponse>(
             `${baseUrl}/api/auth/refresh`,
             null,
-            { withCredentials: true }, // httpOnly Cookie 자동 전송
+            { withCredentials: true, timeout: 5000 }, // httpOnly Cookie 자동 전송
           );
 
           const { access_token: newAccessToken, expires_in } = response.data;
-          useAuthStore.getState().setAccessToken(newAccessToken);
 
-          // expiresAt 갱신
-          if (expires_in) {
-            const { user } = useAuthStore.getState();
-            if (user) {
-              useAuthStore.getState().setAuth(newAccessToken, user, expires_in);
-            }
+          // setAuth로 accessToken + expiresAt을 한 번에 갱신 (setAccessToken 중복 호출 제거)
+          const { user } = useAuthStore.getState();
+          if (user && expires_in) {
+            useAuthStore.getState().setAuth(newAccessToken, user, expires_in);
+          } else {
+            // user가 없는 엣지케이스: accessToken만 갱신
+            useAuthStore.getState().setAccessToken(newAccessToken);
           }
 
+          // isRefreshing을 false로 먼저 설정한 후 큐 처리
+          // (큐에서 꺼낸 요청이 401 받아도 다시 갱신 시도 가능하도록)
+          isRefreshing = false;
           processQueue(null, newAccessToken);
 
           (originalRequest.headers as Record<string, string>).Authorization =
             `Bearer ${newAccessToken}`;
           return axiosInstance(originalRequest);
         } catch (refreshError) {
+          isRefreshing = false;
           processQueue(refreshError, null);
           clearSession();
           return Promise.reject(
             new ApiError('인증이 만료되었습니다. 다시 로그인해주세요.', 'UNAUTHORIZED', 401),
           );
-        } finally {
-          isRefreshing = false;
         }
       }
 
