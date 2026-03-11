@@ -27,6 +27,7 @@ import {
   useUpdateScheduleMutation,
 } from '@/features/schedule';
 import { Button } from '@/shared/components/ui/button';
+import { PageHeader } from '@/shared/components/ui/PageHeader';
 import { cn } from '@/shared/lib/utils';
 
 const SchedulePage = () => {
@@ -94,9 +95,11 @@ const SchedulePage = () => {
   return (
     <div className="flex flex-col gap-5">
       {/* ── 페이지 헤더 ─────────────────────────────────────── */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-gray-900">스케줄</h1>
+      <PageHeader
+        icon={<Calendar className="size-5 text-[#351f66]" />}
+        iconBg="bg-[#351f66]/10"
+        title="스케줄"
+        description={
           <div className="flex items-center gap-2 mt-1">
             <span className="text-sm text-gray-500">현재 권한:</span>
             <span
@@ -116,8 +119,8 @@ const SchedulePage = () => {
               </span>
             )}
           </div>
-        </div>
-
+        }
+      >
         {/* 액션 버튼 영역 */}
         <div className="flex items-center gap-2 flex-wrap">
           {/* 개인/전체 토글 */}
@@ -127,9 +130,7 @@ const SchedulePage = () => {
               onClick={() => setViewMode('my')}
               className={cn(
                 'flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors',
-                viewMode === 'my'
-                  ? 'bg-[#5b31a5] text-white'
-                  : 'text-gray-600 hover:bg-gray-50',
+                viewMode === 'my' ? 'bg-[#5b31a5] text-white' : 'text-gray-600 hover:bg-gray-50',
               )}
             >
               <User className="size-4" />내 스케줄
@@ -139,12 +140,11 @@ const SchedulePage = () => {
               onClick={() => setViewMode('all')}
               className={cn(
                 'flex items-center gap-1.5 px-3 py-2 text-sm font-medium transition-colors border-l border-gray-200',
-                viewMode === 'all'
-                  ? 'bg-[#5b31a5] text-white'
-                  : 'text-gray-600 hover:bg-gray-50',
+                viewMode === 'all' ? 'bg-[#5b31a5] text-white' : 'text-gray-600 hover:bg-gray-50',
               )}
             >
-              <Users className="size-4" />전체
+              <Users className="size-4" />
+              전체
             </button>
           </div>
 
@@ -156,14 +156,16 @@ const SchedulePage = () => {
                 className="bg-sky-500 hover:bg-sky-600 text-white gap-1.5 rounded-xl shadow-sm"
                 onClick={() => setShiftOpen(true)}
               >
-                <ArrowLeftRight className="size-4" />근무교대
+                <ArrowLeftRight className="size-4" />
+                근무교대
               </Button>
               <Button
                 size="sm"
                 className="bg-green-500 hover:bg-green-600 text-white gap-1.5 rounded-xl shadow-sm"
                 onClick={() => setDayoffOpen(true)}
               >
-                <Calendar className="size-4" />휴무신청
+                <Calendar className="size-4" />
+                휴무신청
               </Button>
             </>
           )}
@@ -178,11 +180,12 @@ const SchedulePage = () => {
                 setScheduleFormOpen(true);
               }}
             >
-              <CalendarPlus className="size-4" />스케줄 생성
+              <CalendarPlus className="size-4" />
+              스케줄 생성
             </Button>
           )}
         </div>
-      </div>
+      </PageHeader>
 
       {/* ── 주차 네비게이터 ──────────────────────────────────── */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
@@ -212,9 +215,7 @@ const SchedulePage = () => {
                 <div
                   className={cn(
                     'flex flex-col items-center py-2.5 px-1 rounded-xl mb-1',
-                    isCurrentDay
-                      ? 'bg-[#5b31a5] text-white'
-                      : 'bg-gray-50 text-gray-500',
+                    isCurrentDay ? 'bg-[#5b31a5] text-white' : 'bg-gray-50 text-gray-500',
                   )}
                 >
                   <span
@@ -241,10 +242,7 @@ const SchedulePage = () => {
                 <div className="flex flex-col gap-1.5 flex-1">
                   {isLoading ? (
                     Array.from({ length: 2 }).map((_, i) => (
-                      <div
-                        key={i}
-                        className="bg-gray-100 rounded-xl h-[58px] animate-pulse"
-                      />
+                      <div key={i} className="bg-gray-100 rounded-xl h-[58px] animate-pulse" />
                     ))
                   ) : daySchedules.length > 0 ? (
                     daySchedules.map((schedule) => (

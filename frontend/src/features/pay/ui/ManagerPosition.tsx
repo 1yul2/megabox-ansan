@@ -1,9 +1,12 @@
 import { useMemo, useState } from 'react';
+
 import { calculateTotals } from '../index';
+
+import ManagerTable from './ManagerTable';
+import PayrollSummary from './PayrollSummary';
+
 import type { ManagerPositionsProps } from '../model/manager/type';
 
-import PayrollSummary from './PayrollSummary';
-import ManagerTable from './ManagerTable';
 import SearchInput from '@/shared/components/ui/SearchInput';
 
 export default function ManagerPositions({ filteredData }: ManagerPositionsProps) {

@@ -1,4 +1,5 @@
 import type { ComponentType } from 'react';
+
 import { cn } from '@/shared/lib/utils';
 
 interface NavItemProps {
@@ -24,9 +25,7 @@ const NavItem = ({ icon: Icon, label, active, onClick, collapsed }: NavItemProps
     >
       <Icon className={cn('shrink-0', collapsed ? 'size-5' : 'size-[18px]')} />
       {!collapsed && <span className="truncate">{label}</span>}
-      {active && !collapsed && (
-        <span className="ml-auto size-1.5 rounded-full bg-white/60" />
-      )}
+      {active && !collapsed && <span className="ml-auto size-1.5 rounded-full bg-white/60" />}
     </button>
   );
 };

@@ -7,6 +7,15 @@ import { configDefaults } from 'vitest/config';
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  server: {
+    // Windows Docker 환경에서 파일 변경 감지가 안 되는 문제 해결
+    // inotify 대신 polling 방식으로 파일 변경을 감지
+    watch: {
+      usePolling: true,
+      interval: 1000,
+    },
+    hmr: true,
+  },
   // =========================================================
   // Vitest 설정
   // =========================================================

@@ -21,10 +21,7 @@ export default function PayrollSummary({
         value={`${totalSalary.toLocaleString()}원`}
         color="text-mega-secondary"
       />
-      <SummaryCard
-        title="지급합계"
-        value={`${totalNetPay.toLocaleString()}원`}
-      />
+      <SummaryCard title="지급합계" value={`${totalNetPay.toLocaleString()}원`} />
       <SummaryCard
         title="공제합계"
         value={`${totalDeduction.toLocaleString()}원`}

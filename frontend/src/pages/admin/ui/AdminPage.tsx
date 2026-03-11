@@ -7,6 +7,7 @@ import {
   UserManagement,
 } from '@/features/admin';
 import { usePendingUsersQuery } from '@/features/admin/api/queries';
+import { PageHeader } from '@/shared/components/ui/PageHeader';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs';
 import { cn } from '@/shared/lib/utils';
 
@@ -22,15 +23,12 @@ const AdminPage = () => {
   return (
     <div className="flex flex-col gap-6">
       {/* ── 페이지 헤더 ── */}
-      <div className="flex items-center gap-3">
-        <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-[#351f66]/10">
-          <ShieldUser className="size-5 text-[#351f66]" />
-        </div>
-        <div>
-          <h1 className="text-xl font-bold text-gray-900">관리자</h1>
-          <p className="text-sm text-gray-500">직원 관리, 스케줄, 공휴일 및 보험 요율 설정</p>
-        </div>
-      </div>
+      <PageHeader
+        icon={<ShieldUser className="size-5 text-[#351f66]" />}
+        iconBg="bg-[#351f66]/10"
+        title="관리자"
+        description="직원 관리, 스케줄, 공휴일 및 보험 요율 설정"
+      />
 
       {/* ── 탭 ── */}
       <Tabs defaultValue="pending">

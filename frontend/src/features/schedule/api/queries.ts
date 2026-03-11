@@ -20,9 +20,9 @@ import type {
   ScheduleCreateDTO,
   ScheduleUpdateDTO,
 } from './dto';
+import type { CategoryCountsResponse } from '@/features/community/api/dto';
 
 import { QUERY_KEYS } from '@/shared/api/queryKeys';
-import type { CategoryCountsResponse } from '@/features/community/api/dto';
 
 const SK = QUERY_KEYS.schedule;
 

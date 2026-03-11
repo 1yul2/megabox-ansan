@@ -1,6 +1,7 @@
 import { Bell, LogOut, Menu } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router';
+
 import { useUserQuery } from '@/entities/user/api/queries';
 import { useLogoutMutation } from '@/features/login/api/queries';
 import logo from '@/shared/assets/logo/Megabox_Logo_Indigo.png';

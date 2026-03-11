@@ -14,8 +14,7 @@ export const authService = {
     apiClient.post<LoginResponseDTO>({ url: '/api/auth/login', data }),
 
   /** 로그아웃 — Refresh Token은 httpOnly Cookie로 자동 전송 */
-  logout: () =>
-    apiClient.post<LogOutResponseDTO>({ url: '/api/auth/logout' }),
+  logout: () => apiClient.post<LogOutResponseDTO>({ url: '/api/auth/logout' }),
 
   /** 아이디 중복 확인 */
   checkUsername: (username: string) =>

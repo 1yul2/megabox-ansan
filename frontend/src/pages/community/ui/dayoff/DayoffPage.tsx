@@ -1,7 +1,8 @@
-import { useCommunityPostsQuery } from "@/features/community/api/queries";
-import { Badge } from "@/features/community/ui/badge";
-import { BoardPage } from "@/features/community/ui/main/BoardPage";
-import { useMemo, useState } from "react";
+import { useMemo, useState } from 'react';
+
+import { useCommunityPostsQuery } from '@/features/community/api/queries';
+import { Badge } from '@/features/community/ui/badge';
+import { BoardPage } from '@/features/community/ui/main/BoardPage';
 
 export default function DayoffPage() {
   const [page, setPage] = useState(1);
@@ -12,7 +13,7 @@ export default function DayoffPage() {
       page,
       page_size: 5,
     }),
-    [page]
+    [page],
   );
 
   const { data, isLoading } = useCommunityPostsQuery(queryParams);

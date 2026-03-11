@@ -1,14 +1,9 @@
-import {
-  CalendarSync,
-  CloudOff,
-  Megaphone,
-  MessagesSquare,
-  TextAlignStart,
-} from 'lucide-react';
+import { CalendarSync, CloudOff, Megaphone, MessagesSquare, TextAlignStart } from 'lucide-react';
 import { useEffect } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router';
 
 import { useCategoryCountsQuery } from '@/features/community/api/queries';
+import { PageHeader } from '@/shared/components/ui/PageHeader';
 import { cn } from '@/shared/lib/utils';
 
 // ── 탭 정의 ────────────────────────────────────────────────────────────────
@@ -68,24 +63,25 @@ export default function Community() {
 
   // 현재 활성 탭 계산
   const currentSegment = location.pathname.split('/').pop() ?? 'community';
-  const activeTab =
-    TABS.find((t) => t.path === currentSegment) ?? TABS[0];
+  const activeTab = TABS.find((t) => t.path === currentSegment) ?? TABS[0];
 
   return (
     <div className="flex flex-col gap-5">
       {/* ── 페이지 헤더 ── */}
-      <div>
-        <h1 className="text-xl font-bold text-gray-900">커뮤니티</h1>
-        <p className="text-sm text-gray-500 mt-0.5">공지사항, 근무교대, 휴무신청 게시판</p>
-      </div>
+      <PageHeader
+        icon={<MessagesSquare className="size-5 text-[#351f66]" />}
+        iconBg="bg-[#351f66]/10"
+        title="커뮤니티"
+        description="공지사항, 근무교대, 휴무신청 게시판"
+      />
 
       {/* ── 탭 네비게이션 ── */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-1.5">
         <div className="flex gap-1 overflow-x-auto scrollbar-hide">
           {TABS.map((tab) => {
             const Icon = tab.icon;
-            const isActive = tab.path === currentSegment ||
-              (currentSegment === '' && tab.path === 'community');
+            const isActive =
+              tab.path === currentSegment || (currentSegment === '' && tab.path === 'community');
             const count = categoryCounts[tab.categoryKey] ?? 0;
 
             return (
@@ -105,9 +101,7 @@ export default function Community() {
                   <span
                     className={cn(
                       'inline-flex items-center justify-center h-5 min-w-5 px-1.5 rounded-full text-[10px] font-bold',
-                      isActive
-                        ? 'bg-white/20 text-white'
-                        : 'bg-gray-100 text-gray-500',
+                      isActive ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500',
                     )}
                   >
                     {count > 99 ? '99+' : count}
