@@ -25,7 +25,7 @@ import { Textarea } from '@/shared/components/ui/textarea';
 interface ShiftModalProps {
   open: boolean;
   onClose: () => void;
-  onSubmit: (data: {
+  onSubmit?: (data: {
     requester_schedule_date: string;
     target_user_id: number;
     target_schedule_date: string;
@@ -46,12 +46,12 @@ const ShiftModal = ({ open, onClose, onSubmit, employees, isPending = false }: S
 
   const handleSubmit = () => {
     if (!isValid) return;
-    onSubmit({
-      requester_schedule_date: myDate,
-      target_user_id: Number(targetUserId),
-      target_schedule_date: targetDate,
-      reason: reason.trim(),
-    });
+    // onSubmit({
+    //   requester_schedule_date: myDate,
+    //   target_user_id: Number(targetUserId),
+    //   target_schedule_date: targetDate,
+    //   reason: reason.trim(),
+    // });
   };
 
   const handleClose = () => {
@@ -166,7 +166,7 @@ const ShiftModal = ({ open, onClose, onSubmit, employees, isPending = false }: S
           </Button>
           <Button
             className="flex-1 bg-sky-500 hover:bg-sky-500/90 text-white"
-            onClick={handleSubmit}
+            // onClick={handleSubmit}
             disabled={isPending || !isValid}
           >
             {isPending ? '신청 중...' : '신청하기'}

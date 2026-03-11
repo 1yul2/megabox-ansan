@@ -25,3 +25,23 @@ class AttendanceResponse(AttendanceBase):
 
     class Config:
         from_attributes = True
+
+
+# ── 키오스크 ─────────────────────────────────────────────────────────────────
+
+class KioskEmployeeDTO(BaseModel):
+    id: int
+    name: str
+    position: str
+    username: str
+
+    class Config:
+        from_attributes = True
+
+
+class KioskEmployeesResponse(BaseModel):
+    items: list[KioskEmployeeDTO]
+
+
+class KioskActionInput(BaseModel):
+    user_id: int

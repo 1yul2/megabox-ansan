@@ -5,7 +5,11 @@
       "Bash(python3 -c \"\nimport ast, sys\n\nfiles = [\n    'backend/app/core/redis.py',\n    'backend/app/utils/audit.py',\n    'backend/app/core/config.py',\n    'backend/app/modules/auth/models.py',\n    'backend/app/modules/auth/services.py',\n    'backend/app/modules/auth/schemas.py',\n    'backend/app/modules/auth/routers.py',\n    'backend/app/core/security.py',\n    'backend/app/modules/admin/schemas.py',\n    'backend/app/modules/admin/services.py',\n    'backend/app/modules/admin/routers/users.py',\n    'backend/app/main.py',\n]\nerrors = []\nfor f in files:\n    try:\n        with open\\(f, encoding='utf-8'\\) as fh:\n            ast.parse\\(fh.read\\(\\)\\)\n        print\\(f'  OK  {f}'\\)\n    except SyntaxError as e:\n        errors.append\\(f\\)\n        print\\(f'FAIL {f}: {e}'\\)\nsys.exit\\(len\\(errors\\)\\)\n\")",
       "Bash(docker run:*)",
       "Bash(cd \"C:/Users/megaa/OneDrive/Desktop/megabox/frontend\" && npx tsc --noEmit 2>&1 | head -60)",
-      "Bash(cd \"C:/Users/megaa/OneDrive/Desktop/megabox/frontend\" && node_modules/.bin/tsc --noEmit 2>&1 | head -80)"
+      "Bash(cd \"C:/Users/megaa/OneDrive/Desktop/megabox/frontend\" && node_modules/.bin/tsc --noEmit 2>&1 | head -80)",
+      "Bash(cd C:/Users/megaa/OneDrive/Desktop/megabox/frontend && npm run build 2>&1 | head -80)",
+      "Bash(cd \"C:/Users/megaa/OneDrive/Desktop/megabox/frontend\" && cmd.exe /c \"npm run build\" 2>&1 | head -100)",
+      "Bash(cmd.exe /c \"cd C:\\\\\\\\Users\\\\\\\\megaa\\\\\\\\OneDrive\\\\\\\\Desktop\\\\\\\\megabox\\\\\\\\frontend && npm run build 2>&1\")",
+      "Bash(powershell.exe -Command \"where.exe node; where.exe npx\" 2>&1)"
     ]
   }
 }
