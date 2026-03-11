@@ -285,8 +285,8 @@ const SchedulePage = () => {
       <ShiftModal
         open={shiftOpen}
         onClose={() => setShiftOpen(false)}
-        schedules={allSchedules}
-        user={user ?? null}
+        employees={allSchedules}
+        // user={user ?? null}
       />
       {isAdmin && (
         <ScheduleFormModal

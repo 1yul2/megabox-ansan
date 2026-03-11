@@ -1,4 +1,5 @@
 from datetime import date, datetime, time, timedelta
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -7,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.security import get_current_user
-from app.modules.auth.models import User
+from app.modules.auth.models import PositionEnum, StatusEnum, User
 from app.modules.auth.services import verify_password
 from app.modules.workstatus import models, schemas
 from app.modules.workstatus.services import AttendanceService
@@ -388,5 +389,214 @@ def submit_attendance_all_in_one(
     db.refresh(record)
 
     # 응답용 필드
+    record.user_name = user.name
+    return record
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# 키오스크 전용 API (user_id 기반, 비밀번호 불필요)
+# - 시스템 JWT 토큰 필수 (프론트에서 관리자 계정으로 로그인 후 사용)
+# ══════════════════════════════════════════════════════════════════════════════
+
+_KIOSK_POSITIONS = {PositionEnum.crew, PositionEnum.leader, PositionEnum.cleaner}
+
+
+def _get_kiosk_user(db: Session, user_id: int) -> User:
+    """키오스크 대상 직원 조회 (approved + 지정 직급 검증)"""
+    user = db.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="직원을 찾을 수 없습니다.")
+    if user.status != StatusEnum.approved:
+        raise HTTPException(status_code=400, detail="승인된 계정이 아닙니다.")
+    if user.position not in _KIOSK_POSITIONS:
+        raise HTTPException(status_code=400, detail="근태 대상 직급이 아닙니다.")
+    return user
+
+
+def _get_today_record_or_none(
+    db: Session, user_id: int, today: date
+) -> Optional[models.Attendance]:
+    return (
+        db.query(models.Attendance)
+        .filter_by(user_id=user_id, work_date=today)
+        .first()
+    )
+
+
+# 근태 가능 직원 목록 조회
+# -----------------------------------
+@router.get(
+    "/employees",
+    response_model=schemas.KioskEmployeesResponse,
+    summary="키오스크 직원 목록 조회",
+)
+def get_kiosk_employees(
+    db: Session = Depends(get_db),
+    system_user: User = Depends(require_system_user),
+):
+    users = (
+        db.query(User)
+        .filter(
+            User.status == StatusEnum.approved,
+            User.position.in_(_KIOSK_POSITIONS),
+        )
+        .order_by(User.name)
+        .all()
+    )
+    items = [
+        schemas.KioskEmployeeDTO(
+            id=u.id,
+            name=u.name,
+            position=u.position.value,
+            username=u.username,
+        )
+        for u in users
+    ]
+    return schemas.KioskEmployeesResponse(items=items)
+
+
+# 오늘 근태 기록 조회
+# -----------------------------------
+@router.get(
+    "/today/{user_id}",
+    response_model=Optional[schemas.AttendanceResponse],
+    summary="키오스크 오늘 근태 조회",
+)
+def get_today_record_kiosk(
+    user_id: int,
+    db: Session = Depends(get_db),
+    system_user: User = Depends(require_system_user),
+):
+    today = datetime.now().date()
+    record = _get_today_record_or_none(db, user_id, today)
+    if not record:
+        return None
+    user = db.get(User, user_id)
+    record.user_name = user.name if user else None
+    return record
+
+
+# 키오스크 출근
+# -----------------------------------
+@router.post(
+    "/kiosk/check-in",
+    response_model=schemas.AttendanceResponse,
+    summary="키오스크 출근",
+)
+def kiosk_check_in(
+    payload: schemas.KioskActionInput,
+    db: Session = Depends(get_db),
+    system_user: User = Depends(require_system_user),
+):
+    user = _get_kiosk_user(db, payload.user_id)
+    today = datetime.now().date()
+
+    existing = _get_today_record_or_none(db, user.id, today)
+    if existing:
+        raise HTTPException(status_code=400, detail="이미 오늘 출근 기록이 있습니다.")
+
+    record = models.Attendance(
+        user_id=user.id,
+        work_date=today,
+        check_in=datetime.now().time(),
+    )
+    db.add(record)
+    db.commit()
+    db.refresh(record)
+
+    record.user_name = user.name
+    return record
+
+
+# 키오스크 휴식 시작
+# -----------------------------------
+@router.post(
+    "/kiosk/break-start",
+    response_model=schemas.AttendanceResponse,
+    summary="키오스크 휴식 시작",
+)
+def kiosk_break_start(
+    payload: schemas.KioskActionInput,
+    db: Session = Depends(get_db),
+    system_user: User = Depends(require_system_user),
+):
+    user = _get_kiosk_user(db, payload.user_id)
+    today = datetime.now().date()
+    record = _get_today_record_or_none(db, user.id, today)
+
+    if not record or not record.check_in:
+        raise HTTPException(status_code=400, detail="출근 먼저 해주세요.")
+    if record.check_out:
+        raise HTTPException(status_code=400, detail="이미 퇴근한 기록이 있습니다.")
+    if record.break_start and not record.break_end:
+        raise HTTPException(status_code=400, detail="이미 휴식 중입니다.")
+
+    record.break_start = datetime.now().time()
+    db.commit()
+    db.refresh(record)
+
+    record.user_name = user.name
+    return record
+
+
+# 키오스크 복귀
+# -----------------------------------
+@router.post(
+    "/kiosk/break-end",
+    response_model=schemas.AttendanceResponse,
+    summary="키오스크 복귀",
+)
+def kiosk_break_end(
+    payload: schemas.KioskActionInput,
+    db: Session = Depends(get_db),
+    system_user: User = Depends(require_system_user),
+):
+    user = _get_kiosk_user(db, payload.user_id)
+    today = datetime.now().date()
+    record = _get_today_record_or_none(db, user.id, today)
+
+    if not record or not record.break_start:
+        raise HTTPException(status_code=400, detail="휴식 시작 기록이 없습니다.")
+    if record.break_end:
+        raise HTTPException(status_code=400, detail="이미 복귀한 기록이 있습니다.")
+
+    record.break_end = datetime.now().time()
+    db.commit()
+    db.refresh(record)
+
+    record.user_name = user.name
+    return record
+
+
+# 키오스크 퇴근
+# -----------------------------------
+@router.post(
+    "/kiosk/check-out",
+    response_model=schemas.AttendanceResponse,
+    summary="키오스크 퇴근",
+)
+def kiosk_check_out(
+    payload: schemas.KioskActionInput,
+    db: Session = Depends(get_db),
+    system_user: User = Depends(require_system_user),
+):
+    user = _get_kiosk_user(db, payload.user_id)
+    today = datetime.now().date()
+    record = _get_today_record_or_none(db, user.id, today)
+
+    if not record or not record.check_in:
+        raise HTTPException(status_code=400, detail="출근 기록이 없습니다.")
+    if record.break_start and not record.break_end:
+        raise HTTPException(status_code=400, detail="휴식 중에는 퇴근할 수 없습니다.")
+    if record.check_out:
+        raise HTTPException(status_code=400, detail="이미 퇴근 기록이 있습니다.")
+
+    record.check_out = datetime.now().time()
+
+    AttendanceService.handle_check_out(db=db, record=record)
+
+    db.commit()
+    db.refresh(record)
+
     record.user_name = user.name
     return record
