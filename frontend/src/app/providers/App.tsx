@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { RouterProvider } from 'react-router';
 
 import '../global/App.css';
@@ -19,7 +19,7 @@ interface RefreshResponse {
   expires_in: number;
 }
 
-interface MeResponse extends User {}
+type MeResponse = User;
 
 /** 앱 초기화 시 httpOnly Cookie의 Refresh Token으로 Access Token 복구 */
 async function silentRefresh(setAuth: (token: string, user: User, exp: number) => void) {
@@ -43,6 +43,9 @@ async function silentRefresh(setAuth: (token: string, user: User, exp: number) =
 function AppInner() {
   const [isReady, setIsReady] = useState(false);
   const { setAuth, isAuthenticated } = useAuthStore();
+  // StrictMode 중복 실행 방지: Token Rotation 시 2회 호출되면
+  // 백엔드가 "Refresh Token Reuse Attack"으로 감지하여 모든 세션을 폐기함
+  const silentRefreshCalledRef = useRef(false);
 
   useEffect(() => {
     // 이미 인증된 경우 (같은 탭에서의 네비게이션) → 즉시 준비 완료
@@ -51,8 +54,12 @@ function AppInner() {
       return;
     }
 
+    // StrictMode에서 useEffect 2회 실행 방지
+    if (silentRefreshCalledRef.current) return;
+    silentRefreshCalledRef.current = true;
+
     // 페이지 새로고침 시 → Cookie로 토큰 복구 시도
-    silentRefresh(setAuth).finally(() => setIsReady(true));
+    void silentRefresh(setAuth).finally(() => setIsReady(true));
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!isReady) {
