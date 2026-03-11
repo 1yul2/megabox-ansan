@@ -17,11 +17,22 @@ import type { HolidayFormValues } from '../model/holiday.schema';
 
 import { Button } from '@/shared/components/ui/button';
 import ConfirmDialog from '@/shared/components/ui/confirm-dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/shared/components/ui/select';
 import { Spinner } from '@/shared/components/ui/spinner';
 
+const CURRENT_YEAR = new Date().getFullYear();
+
+const YEAR_OPTIONS = Array.from({ length: 10 }, (_, i) => CURRENT_YEAR - i);
+
 const HolidayManagement = () => {
-  const year = new Date().getFullYear();
-  const { data: holidays, isLoading, isError } = useHolidaysQuery(year);
+  const [selectedYear, setSelectedYear] = useState<number>(CURRENT_YEAR);
+  const { data: holidays, isLoading, isError } = useHolidaysQuery(selectedYear);
   const createMutation = useCreateHolidayMutation();
   const updateMutation = useUpdateHolidayMutation();
   const deleteMutation = useDeleteHolidayMutation();
@@ -94,7 +105,7 @@ const HolidayManagement = () => {
         <div className="flex gap-2">
           <CalendarDays className="size-5 text-mega-secondary mt-0.5" />
           <div>
-            <h2 className="text-base font-semibold">{year}년 공휴일 관리</h2>
+            <h2 className="text-base font-semibold">공휴일 관리</h2>
             <p className="text-sm text-muted-foreground">
               공휴일을 등록하면 급여 계산 시 자동으로 반영됩니다.
             </p>
@@ -104,6 +115,26 @@ const HolidayManagement = () => {
           <Plus />
           공휴일 추가
         </Button>
+      </div>
+
+      {/* 연도 선택 */}
+      <div className="flex items-center gap-3 mb-5">
+        <span className="text-sm font-medium">조회 연도</span>
+        <Select
+          value={String(selectedYear)}
+          onValueChange={(val) => setSelectedYear(Number(val))}
+        >
+          <SelectTrigger className="w-32">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {YEAR_OPTIONS.map((year) => (
+              <SelectItem key={year} value={String(year)}>
+                {year}년
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {/* 목록 */}
