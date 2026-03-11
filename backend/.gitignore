@@ -101,9 +101,6 @@ yarn-error.log*
 *.yml
 *.yaml
 
-# ▶️ Local-specific files
-app/main.py
-
 # ============================================
 # End of .gitignore
 # ============================================
