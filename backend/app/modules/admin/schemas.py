@@ -6,7 +6,7 @@ from typing import List, Optional
 
 from pydantic import BaseModel, EmailStr, Field, field_serializer
 
-from app.modules.auth.models import GenderEnum, PositionEnum
+from app.modules.auth.models import GenderEnum, PositionEnum, StatusEnum
 
 
 # ---------- User(=직원) ----------
@@ -49,9 +49,32 @@ class UserOut(BaseModel):
     phone: Optional[str]
     email: Optional[EmailStr]
     is_active: bool
+    status: StatusEnum = StatusEnum.approved
 
     class Config:
         from_attributes = True
+
+
+class PendingUserOut(BaseModel):
+    """가입 승인 대기 중인 사용자"""
+    id: int
+    username: str
+    name: str
+    gender: GenderEnum
+    birth_date: Optional[date]
+    phone: Optional[str]
+    email: Optional[EmailStr]
+    hire_date: Optional[date]
+    health_cert_expire: Optional[date]
+    unavailable_days: Optional[list[int]]
+
+    class Config:
+        from_attributes = True
+
+
+class PaginatedPendingUsers(BaseModel):
+    total: int
+    items: List[PendingUserOut]
 
 
 class UserDetailOut(UserOut):

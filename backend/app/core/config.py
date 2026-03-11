@@ -89,7 +89,15 @@ class Settings(BaseSettings):
     @classmethod
     def assemble_cors_origins(cls, v):
         if isinstance(v, str):
-            return [i.strip() for i in v.split(",")]
+            v = v.strip()
+            if not v:
+                return []
+            # JSON 배열 형식 처리: ["a","b"]
+            if v.startswith("["):
+                import json
+                return json.loads(v)
+            # 쉼표 구분 형식 처리: a,b,c
+            return [i.strip() for i in v.split(",") if i.strip()]
         return v
 
 

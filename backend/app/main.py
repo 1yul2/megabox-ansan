@@ -7,7 +7,7 @@ from sqlalchemy.orm import configure_mappers
 from app.core.config import settings
 from app.core.database import Base, SessionLocal, engine
 from app.core.routers import api_router
-from app.modules.auth.models import GenderEnum, PositionEnum, User
+from app.modules.auth.models import GenderEnum, PositionEnum, StatusEnum, User
 from app.modules.auth.services import hash_password
 
 configure_mappers()
@@ -42,6 +42,7 @@ def on_startup():
                 gender=GenderEnum.male,
                 email=settings.ADMIN_EMAIL,
                 is_active=True,
+                status=StatusEnum.approved,
             )
             db.add(admin)
 
@@ -85,6 +86,7 @@ def on_startup():
                         gender=u["gender"],
                         email=u["email"],
                         is_active=True,
+                        status=StatusEnum.approved,
                     )
                 )
 

@@ -9,7 +9,8 @@ from sqlalchemy.orm import Session
 from app.modules.admin import schemas
 from app.modules.admin.models import Holiday, InsuranceRate
 from app.modules.admin.schemas import InsuranceRateCreate, InsuranceRateUpdate
-from app.modules.auth.models import User
+from app.core.config import now_kst
+from app.modules.auth.models import StatusEnum, User
 from app.modules.auth.services import decrypt_ssn, encrypt_ssn, hash_password
 
 
@@ -32,6 +33,7 @@ def create_user(db: Session, data: schemas.UserCreate) -> User:
         unavailable_days=data.unavailable_days,
         health_cert_expire=data.health_cert_expire,
         is_active=data.is_active,
+        status=StatusEnum.approved,  # 관리자가 직접 생성 → 즉시 승인
     )
 
     db.add(user)
@@ -100,6 +102,48 @@ def update_user(db: Session, user_id: int, data: schemas.UserUpdate) -> User:
     except IntegrityError:
         db.rollback()
         raise ValueError("중복 또는 제약조건 위반입니다.")
+    return user
+
+
+def list_pending_users(
+    db: Session, limit: int, offset: int
+) -> Tuple[int, List[User]]:
+    stmt = select(User).where(User.status == StatusEnum.pending)
+    count_stmt = select(func.count()).select_from(stmt.subquery())
+    total = db.execute(count_stmt).scalar_one()
+    items = (
+        db.execute(stmt.order_by(User.id.desc()).limit(limit).offset(offset))
+        .scalars()
+        .all()
+    )
+    return total, items
+
+
+def approve_user(db: Session, user_id: int, admin_id: int) -> User:
+    user = db.get(User, user_id)
+    if not user:
+        raise LookupError("사용자를 찾을 수 없습니다.")
+    if user.status != StatusEnum.pending:
+        raise ValueError("승인 대기 중인 사용자가 아닙니다.")
+
+    user.status = StatusEnum.approved
+    user.approved_by = admin_id
+    user.approved_at = now_kst()
+    db.flush()
+    return user
+
+
+def reject_user(db: Session, user_id: int, admin_id: int) -> User:
+    user = db.get(User, user_id)
+    if not user:
+        raise LookupError("사용자를 찾을 수 없습니다.")
+    if user.status != StatusEnum.pending:
+        raise ValueError("승인 대기 중인 사용자가 아닙니다.")
+
+    user.status = StatusEnum.rejected
+    user.approved_by = admin_id
+    user.approved_at = now_kst()
+    db.flush()
     return user
 
 

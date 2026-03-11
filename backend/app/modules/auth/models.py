@@ -36,6 +36,12 @@ class GenderEnum(str, enum.Enum):
     female = "여"
 
 
+class StatusEnum(str, enum.Enum):
+    pending = "pending"      # 가입 신청 (승인 대기)
+    approved = "approved"    # 승인됨 (로그인 가능)
+    rejected = "rejected"    # 거절됨
+
+
 class User(Base):
     __tablename__ = "users"
 
@@ -59,6 +65,21 @@ class User(Base):
         DECIMAL(3, 1), default=Decimal("5.5"), comment="연차 시간"
     )
     is_active = Column(Boolean, default=True, comment="재직 상태")
+
+    # 가입 승인 상태
+    status = Column(
+        Enum(StatusEnum),
+        nullable=False,
+        default=StatusEnum.approved,  # 관리자가 직접 생성한 계정은 바로 활성화
+        comment="가입 상태 (pending/approved/rejected)",
+    )
+    approved_by = Column(
+        Integer,
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        comment="승인/거절한 관리자 ID",
+    )
+    approved_at = Column(DateTime, nullable=True, comment="승인/거절 일시")
 
     # 문자열로 충분. 이 라인이 매퍼 구성 시점에 Payroll을 필요로 함
     attendances = relationship(

@@ -106,3 +106,64 @@ def delete_user(
     except LookupError as e:
         db.rollback()
         raise HTTPException(status_code=404, detail=str(e))
+
+
+# ── 가입 승인 관리 ──────────────────────────────────────────
+
+@router.get(
+    "/pending-users",
+    response_model=schemas.PaginatedPendingUsers,
+    summary="가입 승인 대기 목록",
+)
+def list_pending_users(
+    limit: int = Query(50, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    db: Session = Depends(get_db),
+    admin=Depends(get_current_admin),
+):
+    total, items = services.list_pending_users(db, limit, offset)
+    return {"total": total, "items": items}
+
+
+@router.post(
+    "/users/{memberId}/approve",
+    response_model=schemas.UserOut,
+    summary="가입 승인",
+)
+def approve_user(
+    memberId: int = Path(..., ge=1),
+    db: Session = Depends(get_db),
+    admin=Depends(get_current_admin),
+):
+    try:
+        user = services.approve_user(db, memberId, admin.id)
+        db.commit()
+        return user
+    except LookupError as e:
+        db.rollback()
+        raise HTTPException(status_code=404, detail=str(e))
+    except ValueError as e:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post(
+    "/users/{memberId}/reject",
+    response_model=schemas.UserOut,
+    summary="가입 거절",
+)
+def reject_user(
+    memberId: int = Path(..., ge=1),
+    db: Session = Depends(get_db),
+    admin=Depends(get_current_admin),
+):
+    try:
+        user = services.reject_user(db, memberId, admin.id)
+        db.commit()
+        return user
+    except LookupError as e:
+        db.rollback()
+        raise HTTPException(status_code=404, detail=str(e))
+    except ValueError as e:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=str(e))

@@ -1,11 +1,13 @@
 import jwt
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.security import get_current_user
-from app.modules.auth.models import PositionEnum, User
+from app.modules.auth.models import PositionEnum, StatusEnum, User
+from app.modules.auth.services import encrypt_ssn
 from app.utils.permission_utils import is_system
 
 from . import schemas, services
@@ -14,12 +16,69 @@ from .models import RefreshToken
 router = APIRouter()
 
 
+@router.post(
+    "/register",
+    response_model=schemas.RegisterResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="회원가입 신청 (pending 상태)",
+)
+def register(payload: schemas.RegisterRequest, db: Session = Depends(get_db)):
+    # 아이디 중복 확인
+    if services.get_user_by_username(db, payload.username):
+        raise HTTPException(status_code=409, detail="이미 사용 중인 아이디입니다.")
+
+    # 이메일 중복 확인
+    existing_email = db.query(User).filter(User.email == str(payload.email)).first()
+    if existing_email:
+        raise HTTPException(status_code=409, detail="이미 사용 중인 이메일입니다.")
+
+    user = User(
+        username=payload.username,
+        password=services.hash_password(payload.password),
+        name=payload.name,
+        position=PositionEnum.crew,  # 자가 가입은 항상 크루
+        gender=payload.gender,
+        birth_date=payload.birth_date,
+        ssn=encrypt_ssn(payload.ssn) if payload.ssn else None,
+        phone=payload.phone,
+        email=str(payload.email),
+        hire_date=payload.hire_date,
+        health_cert_expire=payload.health_cert_expire,
+        unavailable_days=payload.unavailable_days,
+        is_active=True,
+        status=StatusEnum.pending,  # 가입 신청 → 반드시 pending
+    )
+
+    db.add(user)
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="이미 사용 중인 아이디 또는 이메일입니다.")
+
+    return {"message": "가입 신청이 완료되었습니다. 관리자 승인 후 로그인 가능합니다."}
+
+
 @router.post("/login", response_model=schemas.TokenResponse, summary="로그인 시도")
 def login(payload: schemas.LoginRequest, db: Session = Depends(get_db)):
     user = services.get_user_by_username(db, payload.username)
+
+    # 아이디/비밀번호 검증
     if not user or not services.verify_password(payload.password, user.password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials"
+        )
+
+    # 가입 상태 검증
+    if user.status == StatusEnum.pending:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="관리자 승인 대기중입니다.",
+        )
+    if user.status == StatusEnum.rejected:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="가입이 거절되었습니다. 관리자에게 문의하세요.",
         )
 
     access_token = services.create_access_token(
