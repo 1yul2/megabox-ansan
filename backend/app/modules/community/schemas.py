@@ -32,12 +32,12 @@ class PostCreate(PostBase):
     """
 
     category: CategoryEnum = Field(..., description="게시글 카테고리")
-    tags: List[str] = Field(default_factory=list, description="태그 목록 (최대 5개)")
 
 
 class CommentCreate(CommentBase):
     """
     댓글 작성: 시스템 제외 모두
+    @username 형식으로 유저 태그 가능
     """
 
     pass
@@ -45,12 +45,11 @@ class CommentCreate(CommentBase):
 
 class PostUpdate(BaseModel):
     """
-    게시글 수정 (제목, 내용, 태그)
+    게시글 수정 (제목, 내용)
     """
 
     title: Optional[str] = Field(None, max_length=255, description="수정할 제목")
     content: Optional[str] = Field(None, description="수정할 내용")
-    tags: Optional[List[str]] = Field(None, description="수정할 태그 목록")
 
 
 class CommentUpdate(BaseModel):
@@ -59,6 +58,15 @@ class CommentUpdate(BaseModel):
     """
 
     content: Optional[str] = Field(None, description="수정할 내용")
+
+
+class MentionedUserInfo(BaseModel):
+    id: int
+    username: str
+    name: str
+
+    class Config:
+        from_attributes = True
 
 
 class CommentResponse(BaseModel):
@@ -78,6 +86,7 @@ class CommentResponse(BaseModel):
 
     like_count: int = Field(0, description="좋아요 개수")
     is_liked: bool = Field(False, description="내가 좋아요를 눌렀는지 여부")
+    mentions: List[MentionedUserInfo] = Field(default_factory=list, description="태그된 유저 목록")
 
     class Config:
         from_attributes = True
@@ -102,7 +111,6 @@ class PostListResponse(BaseModel):
     updated_at: datetime
 
     comments_count: int
-    tags: List[str] = Field(default_factory=list)
     likes_count: int = 0
     liked_by_me: bool = False
 
@@ -130,7 +138,6 @@ class PostResponse(BaseModel):
     updated_at: datetime
 
     comments_count: int
-    tags: List[str] = Field(default_factory=list)
     likes_count: int = 0
     liked_by_me: bool = False
 
@@ -166,8 +173,8 @@ class SearchScope(str, Enum):
     검색 범위
     """
 
-    all = "all"  # 전체
-    title = "title"  # 제목 검색
+    all = "all"        # 전체
+    title = "title"    # 제목 검색
     content = "content"  # 내용 검색
     author = "author"  # 작성자 검색
 
@@ -177,6 +184,20 @@ class OrderBy(str, Enum):
     정렬 기준
     """
 
-    latest = "latest"  # 최신순
-    oldest = "oldest"  # 오래된 순
+    latest = "latest"   # 최신순
+    oldest = "oldest"   # 오래된 순
     popular = "popular"  # 인기순 (댓글 많은 순)
+
+
+class UserSearchResult(BaseModel):
+    """
+    멘션 자동완성용 유저 검색 결과
+    """
+
+    id: int
+    username: str
+    name: str
+    position: PositionEnum
+
+    class Config:
+        from_attributes = True

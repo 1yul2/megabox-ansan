@@ -25,13 +25,11 @@ from app.core.database import Base
 
 
 class PositionEnum(str, enum.Enum):
-    manager           = "점장"
-    assistant_manager = "매니저"
-    advisor           = "바이저"
-    leader            = "리더"
-    crew              = "크루"
-    cleaner           = "미화"
-    system            = "시스템"
+    admin   = "관리자"   # 통합 관리자 (구 점장 + 매니저 + 바이저)
+    leader  = "리더"
+    crew    = "크루"
+    cleaner = "미화"
+    system  = "시스템"
 
 
 class GenderEnum(str, enum.Enum):

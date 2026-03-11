@@ -7,7 +7,7 @@ services:
     container_name: megabox-db
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: dkstkswnddkd!1
+      MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: megabox
       TZ: Asia/Seoul
     ports:

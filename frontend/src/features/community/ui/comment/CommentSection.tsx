@@ -12,6 +12,8 @@ import { CommentItem } from './CommentItem';
 import CommentForm from './CommentForm';
 import { Button } from '@/shared/components/ui/button';
 import { cn } from '@/shared/lib/utils';
+import { useUserQuery } from '@/entities/user/api/queries';
+import { hasAdminAccess } from '@/entities/user/model/role';
 
 interface CommentSectionProps {
   postId: number;
@@ -20,6 +22,9 @@ interface CommentSectionProps {
 
 const CommentSection = memo(({ postId, currentUserId }: CommentSectionProps) => {
   const [page, setPage] = useState(1);
+
+  const { data: currentUser } = useUserQuery();
+  const isAdmin = !!currentUser && hasAdminAccess(currentUser.position);
 
   const { data, isLoading } = useCommentsQuery(postId, page);
   const createMutation  = useCreateCommentMutation(postId);
@@ -49,18 +54,20 @@ const CommentSection = memo(({ postId, currentUserId }: CommentSectionProps) => 
     deleteMutation.mutate(id, {
       onSuccess: () => {
         toast.success('댓글이 삭제되었습니다.');
-        setPage((p) => Math.max(1, p - 1));
+        if (page > 1 && comments.length === 1) {
+          setPage((p) => Math.max(1, p - 1));
+        }
       },
       onError: () => toast.error('댓글 삭제에 실패했습니다.'),
     });
   };
 
   return (
-    <div className="border-t border-gray-100 pt-6 flex flex-col gap-6">
+    <div className="flex flex-col gap-6">
 
       {/* 헤더 */}
-      <div className="flex items-center gap-2">
-        <MessageSquare className="size-4 text-gray-500" />
+      <div className="flex items-center gap-2 pb-1 border-b border-gray-100">
+        <MessageSquare className="size-4 text-gray-400" />
         <h3 className="text-sm font-semibold text-gray-800">
           댓글
           {total > 0 && (
@@ -68,6 +75,9 @@ const CommentSection = memo(({ postId, currentUserId }: CommentSectionProps) => 
           )}
         </h3>
       </div>
+
+      {/* 댓글 입력 (상단 배치) */}
+      <CommentForm onSubmit={handleCreate} isLoading={createMutation.isPending} />
 
       {/* 댓글 목록 */}
       {isLoading ? (
@@ -84,26 +94,30 @@ const CommentSection = memo(({ postId, currentUserId }: CommentSectionProps) => 
           ))}
         </div>
       ) : comments.length === 0 ? (
-        <p className="text-sm text-gray-400 text-center py-6">
-          첫 번째 댓글을 남겨보세요.
-        </p>
+        <div className="text-center py-8">
+          <p className="text-sm text-gray-400">
+            아직 댓글이 없습니다. 첫 댓글을 남겨보세요.
+          </p>
+        </div>
       ) : (
-        <div className="flex flex-col gap-5">
+        <div className="flex flex-col divide-y divide-gray-50">
           {comments.map((comment) => (
-            <CommentItem
-              key={comment.id}
-              comment={comment}
-              currentUserId={currentUserId}
-              onUpdate={handleUpdate}
-              onDelete={handleDelete}
-            />
+            <div key={comment.id} className="py-4 first:pt-0">
+              <CommentItem
+                comment={comment}
+                currentUserId={currentUserId}
+                isAdmin={isAdmin}
+                onUpdate={handleUpdate}
+                onDelete={handleDelete}
+              />
+            </div>
           ))}
         </div>
       )}
 
       {/* 페이지네이션 */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-1">
+        <div className="flex items-center justify-center gap-1 pt-2">
           {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
             <button
               key={p}
@@ -119,9 +133,6 @@ const CommentSection = memo(({ postId, currentUserId }: CommentSectionProps) => 
           ))}
         </div>
       )}
-
-      {/* 댓글 입력 */}
-      <CommentForm onSubmit={handleCreate} isLoading={createMutation.isPending} />
     </div>
   );
 });

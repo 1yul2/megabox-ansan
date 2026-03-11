@@ -55,7 +55,7 @@ async def on_startup():
                 password=hash_password(settings.ADMIN_PASSWORD),
                 birth_date=date(1998, 2, 4),
                 name=settings.ADMIN_NAME,
-                position=PositionEnum.manager,
+                position=PositionEnum.admin,
                 gender=GenderEnum.male,
                 email=settings.ADMIN_EMAIL,
                 phone="010-0000-0000",

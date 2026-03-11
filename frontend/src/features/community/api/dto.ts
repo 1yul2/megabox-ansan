@@ -1,9 +1,15 @@
-// notice DTO
+// 멘션 유저 정보
+export interface MentionedUserDTO {
+  id: number;
+  username: string;
+  name: string;
+}
+
+// 게시글 생성 DTO
 export interface CreatePostRequestDTO {
   title: string;
   content: string;
   category: '공지' | '자유게시판' | '근무교대' | '휴무신청';
-  tags?: string[];
 }
 
 export interface CreatePostResponseDTO {
@@ -24,6 +30,9 @@ export interface CommentDTO {
   content: string;
   created_at: string;
   updated_at: string;
+  like_count?: number;
+  is_liked?: boolean;
+  mentions?: MentionedUserDTO[];
 }
 
 // 게시글 DTO
@@ -40,12 +49,11 @@ export interface CommunityPostDTO {
   updated_at: string;
   comments: CommentDTO[];
   comments_count?: number;
-  tags?: string[];
   likes_count?: number;
   liked_by_me?: boolean;
 }
 
-// 게시글 DTO (2)
+// 게시글 목록 DTO
 export interface CommunityPostListResponseDTO {
   items: CommunityPostDTO[];
   total: number;
@@ -72,17 +80,24 @@ export interface CreateCommentRequestDTO {
   content: string;
 }
 
-// 커뮤 GET params
+// 게시글 목록 요청 파라미터
 export interface GetCommunityPostsParams {
   category?: string;
   page?: number;
   page_size?: number;
   search?: string;
   order?: 'latest' | 'oldest' | 'popular';
-  tag?: string;
 }
 
 // 카테고리별 글 갯수
 export interface CategoryCountsResponse {
   counts: Record<string, number>;
+}
+
+// 유저 검색 결과 (멘션 자동완성)
+export interface UserSearchResultDTO {
+  id: number;
+  username: string;
+  name: string;
+  position: string;
 }

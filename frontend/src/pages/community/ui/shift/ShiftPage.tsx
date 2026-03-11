@@ -4,7 +4,7 @@ export default function ShiftPage() {
   return (
     <PostListPage
       category="근무교대"
-      canWrite={true}
+      canWrite={false}
       fixedCategory="근무교대"
     />
   );

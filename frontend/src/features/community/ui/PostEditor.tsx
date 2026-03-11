@@ -3,7 +3,6 @@ import { toast } from 'sonner';
 import { PenLine } from 'lucide-react';
 
 import { useCreatePostMutation, useUpdatePostMutation } from '../api/queries';
-import { TagInput } from './TagInput';
 
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
@@ -14,30 +13,26 @@ import {
   DialogTitle,
 } from '@/shared/components/ui/dialog';
 
-type Category = '공지' | '자유게시판' | '근무교대' | '휴무신청';
+type Category = '공지' | '자유게시판';
 
 interface PostEditorProps {
   open: boolean;
   onClose: () => void;
-  /** 수정 모드일 때 */
   editTarget?: {
     id: number;
     title: string;
     content: string;
     category: Category;
-    tags?: string[];
   };
-  /** 카테고리 고정 (특정 게시판에서 열 때) */
   fixedCategory?: Category;
 }
 
-const CATEGORIES: Category[] = ['공지', '자유게시판', '근무교대', '휴무신청'];
+// 직접 작성 가능한 카테고리만 (근무교대/휴무신청은 시스템 자동생성)
+const WRITABLE_CATEGORIES: Category[] = ['공지', '자유게시판'];
 
 const CATEGORY_STYLE: Record<Category, string> = {
   '공지':       'border-red-300 bg-red-50 text-red-700',
   '자유게시판': 'border-purple-300 bg-purple-50 text-purple-700',
-  '근무교대':   'border-green-300 bg-green-50 text-green-700',
-  '휴무신청':   'border-sky-300 bg-sky-50 text-sky-700',
 };
 
 export function PostEditor({ open, onClose, editTarget, fixedCategory }: PostEditorProps) {
@@ -46,24 +41,20 @@ export function PostEditor({ open, onClose, editTarget, fixedCategory }: PostEdi
   const [title, setTitle]       = useState('');
   const [content, setContent]   = useState('');
   const [category, setCategory] = useState<Category>(fixedCategory ?? '자유게시판');
-  const [tags, setTags]         = useState<string[]>([]);
 
   const { mutateAsync: createPost, isPending: isCreating } = useCreatePostMutation();
   const { mutateAsync: updatePost, isPending: isUpdating } = useUpdatePostMutation();
   const isPending = isCreating || isUpdating;
 
-  // 수정 모드: 초기값 세팅
   useEffect(() => {
     if (editTarget) {
       setTitle(editTarget.title);
       setContent(editTarget.content);
       setCategory(editTarget.category);
-      setTags(editTarget.tags ?? []);
     } else {
       setTitle('');
       setContent('');
       setCategory(fixedCategory ?? '자유게시판');
-      setTags([]);
     }
   }, [editTarget, fixedCategory, open]);
 
@@ -73,10 +64,10 @@ export function PostEditor({ open, onClose, editTarget, fixedCategory }: PostEdi
 
     try {
       if (isEdit && editTarget) {
-        await updatePost({ id: editTarget.id, data: { title, content, tags } });
+        await updatePost({ id: editTarget.id, data: { title, content } });
         toast.success('게시글이 수정되었습니다.');
       } else {
-        await createPost({ title, content, category, tags });
+        await createPost({ title, content, category });
         toast.success('게시글이 등록되었습니다.');
       }
       onClose();
@@ -107,7 +98,7 @@ export function PostEditor({ open, onClose, editTarget, fixedCategory }: PostEdi
             <div className="flex flex-col gap-2">
               <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">게시판</label>
               <div className="flex flex-wrap gap-2">
-                {CATEGORIES.map((cat) => (
+                {WRITABLE_CATEGORIES.map((cat) => (
                   <button
                     key={cat}
                     type="button"
@@ -150,15 +141,9 @@ export function PostEditor({ open, onClose, editTarget, fixedCategory }: PostEdi
             <div className="text-right text-[11px] text-gray-400">{content.length}자</div>
           </div>
 
-          {/* 태그 */}
-          <div className="flex flex-col gap-2">
-            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">태그</label>
-            <TagInput tags={tags} onChange={setTags} />
-          </div>
-
           {/* 안내 */}
           <div className="text-[11px] text-gray-400 bg-gray-50 rounded-xl px-4 py-3 leading-relaxed">
-            게시글 작성 시 실명이 공개됩니다. 익명 기능은 제공하지 않습니다.
+            게시글 작성 시 실명이 공개됩니다. 댓글에서 @username 으로 동료를 태그할 수 있습니다.
           </div>
         </div>
 

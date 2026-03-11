@@ -5,21 +5,18 @@ import { PenLine, Search, SlidersHorizontal, X } from 'lucide-react';
 import { useCommunityPostsQuery } from '../api/queries';
 import { PostCard } from './PostCard';
 import { PostEditor } from './PostEditor';
-import { TagChip } from './TagChip';
 
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
 import { cn } from '@/shared/lib/utils';
 
 type Category = '공지' | '자유게시판' | '근무교대' | '휴무신청';
+type WritableCategory = '공지' | '자유게시판';
 type OrderType = 'latest' | 'popular';
 
 interface PostListPageProps {
-  /** 특정 카테고리만 표시할 때. undefined = 전체 */
   category?: Category;
-  /** 이 게시판에서 글쓰기 허용 여부 */
   canWrite?: boolean;
-  /** 글쓰기 시 카테고리 고정 */
   fixedCategory?: Category;
   pageSize?: number;
 }
@@ -33,7 +30,7 @@ const ORDER_OPTIONS: { key: OrderType; label: string }[] = [
 const PostCardSkeleton = memo(() => (
   <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden animate-pulse">
     <div className="pl-5 pr-5 py-4">
-      <div className="flex items-center justify-between mb-2">
+      <div className="flex items-center justify-between mb-2.5">
         <div className="h-5 w-14 bg-gray-100 rounded-md" />
         <div className="h-3 w-16 bg-gray-100 rounded" />
       </div>
@@ -62,14 +59,11 @@ export function PostListPage({
   const [page, setPage]       = useState(1);
   const [order, setOrder]     = useState<OrderType>('latest');
   const [search, setSearch]   = useState('');
-  const [activeTag, setActiveTag] = useState('');
   const [editorOpen, setEditorOpen] = useState(false);
 
-  // 검색어 디바운스 (500ms)
   const deferredSearch = useDeferredValue(search);
 
-  // 검색어/카테고리 변경 시 1페이지로 리셋
-  useEffect(() => { setPage(1); }, [deferredSearch, category, order, activeTag]);
+  useEffect(() => { setPage(1); }, [deferredSearch, category, order]);
 
   const { data, isLoading } = useCommunityPostsQuery({
     category,
@@ -77,19 +71,20 @@ export function PostListPage({
     page_size: pageSize,
     order,
     search: deferredSearch || undefined,
-    tag: activeTag || undefined,
   });
 
-  const posts     = data?.items ?? [];
+  const posts      = data?.items ?? [];
   const totalPages = data?.total_pages ?? 1;
+  const total      = data?.total ?? 0;
 
   const handleCardClick = useCallback((id: number) => {
     void navigate(String(id));
   }, [navigate]);
 
-  const handleTagClick = useCallback((tag: string) => {
-    setActiveTag((prev) => prev === tag ? '' : tag);
-  }, []);
+  // fixedCategory가 '공지' 또는 '자유게시판'인 경우에만 에디터 표시
+  const writableFixedCategory = (fixedCategory === '공지' || fixedCategory === '자유게시판')
+    ? fixedCategory as WritableCategory
+    : undefined;
 
   return (
     <div className="flex flex-col gap-4">
@@ -137,7 +132,7 @@ export function PostListPage({
           ))}
         </div>
 
-        {/* 글쓰기 */}
+        {/* 글쓰기 (근무교대/휴무신청은 숨김) */}
         {canWrite && (
           <Button
             onClick={() => setEditorOpen(true)}
@@ -149,16 +144,13 @@ export function PostListPage({
         )}
       </div>
 
-      {/* ── 활성 태그 필터 표시 ────────────────────────────────── */}
-      {activeTag && (
-        <div className="flex items-center gap-2 text-sm text-gray-600">
-          <span className="text-xs text-gray-400">태그 필터:</span>
-          <TagChip
-            tag={activeTag}
-            active
-            size="md"
-            onRemove={() => setActiveTag('')}
-          />
+      {/* ── 게시글 수 표시 ──────────────────────────────────────── */}
+      {!isLoading && (
+        <div className="text-xs text-gray-400">
+          {deferredSearch
+            ? `"${deferredSearch}" 검색 결과 ${total}개`
+            : `전체 ${total}개`
+          }
         </div>
       )}
 
@@ -171,9 +163,9 @@ export function PostListPage({
               <div className="flex flex-col items-center justify-center py-16 text-center rounded-2xl border-2 border-dashed border-gray-200 bg-white">
                 <div className="text-4xl mb-3">📭</div>
                 <p className="text-sm font-medium text-gray-600">
-                  {deferredSearch || activeTag ? '검색 결과가 없습니다.' : '아직 게시글이 없습니다.'}
+                  {deferredSearch ? '검색 결과가 없습니다.' : '아직 게시글이 없습니다.'}
                 </p>
-                {canWrite && !deferredSearch && !activeTag && (
+                {canWrite && !deferredSearch && (
                   <button
                     type="button"
                     onClick={() => setEditorOpen(true)}
@@ -189,8 +181,7 @@ export function PostListPage({
                 key={post.id}
                 post={post}
                 onClick={() => handleCardClick(post.id)}
-                onTagClick={handleTagClick}
-                activeTag={activeTag}
+                showCategory={!fixedCategory}
               />
             ))
         }
@@ -210,7 +201,6 @@ export function PostListPage({
           </Button>
 
           {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
-            // sliding window pagination
             let pageNum: number;
             if (totalPages <= 7) {
               pageNum = i + 1;
@@ -254,7 +244,7 @@ export function PostListPage({
       <PostEditor
         open={editorOpen}
         onClose={() => setEditorOpen(false)}
-        fixedCategory={fixedCategory}
+        fixedCategory={writableFixedCategory}
       />
     </div>
   );

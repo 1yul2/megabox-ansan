@@ -49,7 +49,7 @@ def get_user_by_username(db: Session, username: str) -> Optional[User]:
 
 
 def is_admin_position(pos: PositionEnum) -> bool:
-    return pos in {PositionEnum.manager, PositionEnum.system}
+    return pos in {PositionEnum.admin, PositionEnum.system}
 
 
 # ── SSN 암호화 ────────────────────────────────────────────────────────────
@@ -80,7 +80,7 @@ def create_access_token(*, user: User) -> tuple[str, str, int]:
         "jti":       jti,
         "username":  user.username,
         "position":  user.position.value,
-        "is_admin":  user.position in {PositionEnum.manager, PositionEnum.system},
+        "is_admin":  user.position in {PositionEnum.admin, PositionEnum.system},
         "is_system": user.position == PositionEnum.system,
         "iat":       int(now.timestamp()),
         "exp":       int(exp.timestamp()),

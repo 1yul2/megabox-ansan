@@ -32,7 +32,6 @@ export const communityKeys = {
 };
 
 // 🔖 게시글
-// POST
 export function useCreatePostMutation() {
   const queryClient = useQueryClient();
 
@@ -43,7 +42,6 @@ export function useCreatePostMutation() {
       await queryClient.refetchQueries({
         queryKey: ['communityPosts'],
       });
-
       await queryClient.refetchQueries({
         queryKey: ['community', 'category-counts'],
       });
@@ -51,7 +49,6 @@ export function useCreatePostMutation() {
   });
 }
 
-// LIST
 export const useCommunityPostsQuery = (params: GetCommunityPostsParams) => {
   return useQuery({
     queryKey: communityKeys.posts(params),
@@ -61,7 +58,6 @@ export const useCommunityPostsQuery = (params: GetCommunityPostsParams) => {
   });
 };
 
-// DETAIL
 export function useCommunityPostDetailQuery(id: number | null) {
   return useQuery({
     queryKey: ['communityPost', id],
@@ -70,7 +66,6 @@ export function useCommunityPostDetailQuery(id: number | null) {
   });
 }
 
-// PUT
 export function useUpdatePostMutation() {
   const queryClient = useQueryClient();
 
@@ -81,7 +76,6 @@ export function useUpdatePostMutation() {
       void queryClient.invalidateQueries({
         queryKey: ['communityPost', variables.id],
       });
-
       void queryClient.invalidateQueries({
         queryKey: ['communityPosts'],
       });
@@ -89,7 +83,6 @@ export function useUpdatePostMutation() {
   });
 }
 
-// DELETE
 export function useDeletePostMutation() {
   const queryClient = useQueryClient();
 
@@ -104,7 +97,6 @@ export function useDeletePostMutation() {
   });
 }
 
-// 카테고리별 글 갯수
 export const useCategoryCountsQuery = () => {
   return useQuery<CategoryCountsResponse>({
     queryKey: ['community', 'category-counts'],
@@ -114,7 +106,6 @@ export const useCategoryCountsQuery = () => {
 };
 
 // 🔖 댓글
-// GET
 export const useCommentsQuery = (postId: number, page: number) =>
   useQuery<CommentsResponseDTO>({
     queryKey: ['comments', postId, page],
@@ -122,7 +113,6 @@ export const useCommentsQuery = (postId: number, page: number) =>
     placeholderData: (prev) => prev,
   });
 
-// POST
 export const useCreateCommentMutation = (postId: number) => {
   const queryClient = useQueryClient();
 
@@ -132,11 +122,14 @@ export const useCreateCommentMutation = (postId: number) => {
       void queryClient.invalidateQueries({
         queryKey: ['comments', postId],
       });
+      // 게시글 댓글 수 업데이트
+      void queryClient.invalidateQueries({
+        queryKey: ['communityPost', postId],
+      });
     },
   });
 };
 
-// PATCH
 export function useUpdateCommentMutation(postId: number) {
   const queryClient = useQueryClient();
 
@@ -151,7 +144,6 @@ export function useUpdateCommentMutation(postId: number) {
   });
 }
 
-//DELETE
 export function useDeleteCommentMutation(postId: number) {
   const queryClient = useQueryClient();
 
@@ -161,6 +153,9 @@ export function useDeleteCommentMutation(postId: number) {
     onSuccess: () => {
       void queryClient.invalidateQueries({
         queryKey: ['comments', postId],
+      });
+      void queryClient.invalidateQueries({
+        queryKey: ['communityPost', postId],
       });
     },
   });
