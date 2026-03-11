@@ -5,7 +5,7 @@ import { NAV_ITEMS, type NavItemConfig } from '../model/nav.config';
 import NavItem from './NavItem';
 import { useUserQuery } from '@/entities/user/api/queries';
 import { useLogoutMutation } from '@/features/login/api/queries';
-import logo from '@/shared/assets/logo/LogowithText_white.png';
+import logo from '@/shared/assets/logo/Logo_white.png';
 import { Avatar, AvatarFallback } from '@/shared/components/ui/avatar';
 import {
   Dialog,
