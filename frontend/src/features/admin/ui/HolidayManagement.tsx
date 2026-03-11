@@ -120,10 +120,7 @@ const HolidayManagement = () => {
       {/* 연도 선택 */}
       <div className="flex items-center gap-3 mb-5">
         <span className="text-sm font-medium">조회 연도</span>
-        <Select
-          value={String(selectedYear)}
-          onValueChange={(val) => setSelectedYear(Number(val))}
-        >
+        <Select value={String(selectedYear)} onValueChange={(val) => setSelectedYear(Number(val))}>
           <SelectTrigger className="w-32">
             <SelectValue />
           </SelectTrigger>
