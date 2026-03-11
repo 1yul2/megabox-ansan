@@ -1,18 +1,63 @@
-import { CalendarSync, CloudOff, Megaphone, MessagesSquare, TextAlignStart } from 'lucide-react';
+import {
+  CalendarSync,
+  CloudOff,
+  Megaphone,
+  MessagesSquare,
+  TextAlignStart,
+} from 'lucide-react';
 import { useEffect } from 'react';
-import { Outlet, useLocation } from 'react-router';
+import { Outlet, useLocation, useNavigate } from 'react-router';
 
-import logo from '../../../shared/assets/logo/Megabox_Logo_Indigo.png';
-
-import { ListButton } from '@/features/community';
 import { useCategoryCountsQuery } from '@/features/community/api/queries';
+import { cn } from '@/shared/lib/utils';
 
-export default function Communiity() {
+// ── 탭 정의 ────────────────────────────────────────────────────────────────
+
+const TABS = [
+  {
+    label: '전체',
+    path: 'community',
+    icon: TextAlignStart,
+    categoryKey: '전체',
+    color: 'bg-[#351f66]',
+  },
+  {
+    label: '공지사항',
+    path: 'notice',
+    icon: Megaphone,
+    categoryKey: '공지',
+    color: 'bg-red-500',
+  },
+  {
+    label: '근무교대',
+    path: 'shift',
+    icon: CalendarSync,
+    categoryKey: '근무교대',
+    color: 'bg-green-500',
+  },
+  {
+    label: '휴무신청',
+    path: 'dayoff',
+    icon: CloudOff,
+    categoryKey: '휴무신청',
+    color: 'bg-sky-500',
+  },
+  {
+    label: '자유게시판',
+    path: 'freeboard',
+    icon: MessagesSquare,
+    categoryKey: '자유게시판',
+    color: 'bg-[#351f66]',
+  },
+] as const;
+
+// ── 메인 컴포넌트 ──────────────────────────────────────────────────────────
+
+export default function Community() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { data, isLoading, refetch } = useCategoryCountsQuery();
 
-  // 커뮤니티 내 라우팅 이동 시 카테고리 카운트 최신화
-  // (휴무신청 후 탭 뱃지가 즉시 반영되도록 보장)
   useEffect(() => {
     void refetch();
   }, [location.pathname, refetch]);
@@ -21,49 +66,61 @@ export default function Communiity() {
 
   const categoryCounts = data?.counts ?? {};
 
+  // 현재 활성 탭 계산
+  const currentSegment = location.pathname.split('/').pop() ?? 'community';
+  const activeTab =
+    TABS.find((t) => t.path === currentSegment) ?? TABS[0];
+
   return (
-    <div className="flex flex-col gap-5 w-full sm:w-3/4 mx-auto mb-10 px-4 sm:px-0">
-      <img src={logo} alt="logo" className="w-40 sm:w-50 self-center mb-4" />
+    <div className="flex flex-col gap-5">
+      {/* ── 페이지 헤더 ── */}
+      <div>
+        <h1 className="text-xl font-bold text-gray-900">커뮤니티</h1>
+        <p className="text-sm text-gray-500 mt-0.5">공지사항, 근무교대, 휴무신청 게시판</p>
+      </div>
 
-      <div className="flex flex-col gap-5">
-        <div className="flex flex-wrap self-start gap-2">
-          <ListButton
-            label="전체"
-            to="community"
-            count={categoryCounts['전체'] ?? 0}
-            icon={TextAlignStart}
-            activeColor="bg-mega opacity-90"
-          />
-          <ListButton
-            label="공지사항"
-            to="notice"
-            count={categoryCounts['공지'] ?? 0}
-            icon={Megaphone}
-            activeColor="bg-red-500"
-          />
-          <ListButton
-            label="근무교대"
-            to="shift"
-            count={categoryCounts['근무교대'] ?? 0}
-            icon={CalendarSync}
-            activeColor="bg-[#44BC62]"
-          />
-          <ListButton
-            label="휴무신청"
-            to="dayoff"
-            count={categoryCounts['휴무신청'] ?? 0}
-            icon={CloudOff}
-            activeColor="bg-[#00C0E8]"
-          />
-          <ListButton
-            label="자유게시판"
-            to="freeboard"
-            count={categoryCounts['자유게시판'] ?? 0}
-            icon={MessagesSquare}
-            activeColor="bg-mega opacity-90"
-          />
+      {/* ── 탭 네비게이션 ── */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-1.5">
+        <div className="flex gap-1 overflow-x-auto scrollbar-hide">
+          {TABS.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = tab.path === currentSegment ||
+              (currentSegment === '' && tab.path === 'community');
+            const count = categoryCounts[tab.categoryKey] ?? 0;
+
+            return (
+              <button
+                key={tab.path}
+                onClick={() => void navigate(tab.path)}
+                className={cn(
+                  'flex items-center gap-2 shrink-0 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all duration-150',
+                  isActive
+                    ? 'bg-[#351f66] text-white shadow-sm'
+                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900',
+                )}
+              >
+                <Icon className="size-4 shrink-0" />
+                <span>{tab.label}</span>
+                {count > 0 && (
+                  <span
+                    className={cn(
+                      'inline-flex items-center justify-center h-5 min-w-5 px-1.5 rounded-full text-[10px] font-bold',
+                      isActive
+                        ? 'bg-white/20 text-white'
+                        : 'bg-gray-100 text-gray-500',
+                    )}
+                  >
+                    {count > 99 ? '99+' : count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
+      </div>
 
+      {/* ── 서브 라우트 콘텐츠 ── */}
+      <div>
         <Outlet />
       </div>
     </div>
