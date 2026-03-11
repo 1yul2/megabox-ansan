@@ -110,8 +110,7 @@ export const createRejectInterceptor =
       case 401: {
         // 로그인/근태 엔드포인트는 갱신 없이 즉시 에러 반환
         const skipRefresh =
-          error.config?.url?.includes('/auth/login') ||
-          error.config?.url?.includes('/workstatus/');
+          error.config?.url?.includes('/auth/login') || error.config?.url?.includes('/workstatus/');
 
         if (skipRefresh) {
           const msg =
@@ -146,8 +145,7 @@ export const createRejectInterceptor =
           })
             .then((token) => {
               originalRequest._retry = true;
-              (originalRequest.headers as Record<string, string>).Authorization =
-                `Bearer ${token}`;
+              (originalRequest.headers as Record<string, string>).Authorization = `Bearer ${token}`;
               return axiosInstance(originalRequest);
             })
             .catch((err: unknown) =>
@@ -200,9 +198,7 @@ export const createRejectInterceptor =
       }
 
       case 404:
-        return Promise.reject(
-          new ApiError('요청한 리소스를 찾을 수 없습니다.', 'NOT_FOUND', 404),
-        );
+        return Promise.reject(new ApiError('요청한 리소스를 찾을 수 없습니다.', 'NOT_FOUND', 404));
 
       case 422: {
         let validationMessage = '입력값을 확인해주세요.';
@@ -212,9 +208,7 @@ export const createRejectInterceptor =
         } else if (typeof errorData?.detail === 'string') {
           validationMessage = errorData.detail;
         }
-        return Promise.reject(
-          new ApiError(validationMessage, 'VALIDATION_ERROR', 422, errorData),
-        );
+        return Promise.reject(new ApiError(validationMessage, 'VALIDATION_ERROR', 422, errorData));
       }
 
       case 429:
@@ -230,11 +224,7 @@ export const createRejectInterceptor =
 
       case 500:
         return Promise.reject(
-          new ApiError(
-            '서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.',
-            'SERVER_ERROR',
-            500,
-          ),
+          new ApiError('서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.', 'SERVER_ERROR', 500),
         );
 
       default: {

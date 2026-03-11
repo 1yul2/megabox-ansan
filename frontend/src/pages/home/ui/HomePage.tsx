@@ -1,20 +1,18 @@
-import type { ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowRight, Calendar, Clock, TrendingUp } from 'lucide-react';
 import { Link } from 'react-router';
 
-import { useUserQuery } from '@/entities/user/api/queries';
+import type { PostDTO } from '@/entities/post/api/dto';
+import type { ReactNode } from 'react';
+
 import { payQueries } from '@/entities/pay/api/queries';
 import { normalizePayOverview } from '@/entities/pay/model/payOverview';
 import { postQueries } from '@/entities/post/api/queries';
-import {
-  ScheduleList,
-  UserCalendar,
-} from '@/features/home';
+import { useUserQuery } from '@/entities/user/api/queries';
+import { ScheduleList, UserCalendar } from '@/features/home';
 import { getISOWeek, useScheduleWeekQuery } from '@/features/schedule';
-import type { PostDTO } from '@/entities/post/api/dto';
-import { formatDate } from '@/shared/lib/date';
 import { ROUTES } from '@/shared/constants/routes';
+import { formatDate } from '@/shared/lib/date';
 
 // ── 유틸 ──────────────────────────────────────────────────────────────────
 const today = new Date();
@@ -45,7 +43,9 @@ function StatCard({
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex flex-col gap-3">
       <div className="flex items-center justify-between">
         <span className="text-xs font-medium text-gray-500">{label}</span>
-        <span className={`flex items-center justify-center w-8 h-8 rounded-xl ${accent ?? 'bg-gray-50'}`}>
+        <span
+          className={`flex items-center justify-center w-8 h-8 rounded-xl ${accent ?? 'bg-gray-50'}`}
+        >
           {icon}
         </span>
       </div>
@@ -58,13 +58,7 @@ function StatCard({
 }
 
 /** 섹션 헤더 */
-function SectionHeader({
-  title,
-  to,
-}: {
-  title: string;
-  to?: string;
-}) {
+function SectionHeader({ title, to }: { title: string; to?: string }) {
   return (
     <div className="flex items-center justify-between mb-3">
       <h2 className="text-sm font-semibold text-gray-700">{title}</h2>
@@ -117,7 +111,10 @@ const HomePage = () => {
 
   // 스케줄 데이터
   const { year: isoYear, week } = getISOWeek(today);
-  const { data: allSchedules = [], isLoading: scheduleLoading } = useScheduleWeekQuery(isoYear, week);
+  const { data: allSchedules = [], isLoading: scheduleLoading } = useScheduleWeekQuery(
+    isoYear,
+    week,
+  );
   const mySchedules = allSchedules
     .filter((s) => s.user_id === user?.id)
     .sort((a, b) => a.work_date.localeCompare(b.work_date));
@@ -136,7 +133,6 @@ const HomePage = () => {
 
   return (
     <div className="flex flex-col gap-6">
-
       {/* ── 환영 배너 ──────────────────────────────────────────── */}
       <div className="rounded-2xl overflow-hidden bg-gradient-to-br from-[#1a0f3c] via-[#351f66] to-[#5b31a5] p-6 md:p-8 text-white relative">
         {/* 데코 서클 */}
@@ -185,7 +181,6 @@ const HomePage = () => {
 
       {/* ── 메인 콘텐츠 그리드 ────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-
         {/* 캘린더 + 스케줄 */}
         <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
           <SectionHeader title="이번달 캘린더" />
@@ -218,7 +213,9 @@ const HomePage = () => {
               {payData.net_pay.toLocaleString()}
               <span className="text-lg font-normal ml-1 text-white/70">원</span>
             </p>
-            <p className="text-xs text-white/50 mb-5">지급예정일: {year}-{month}-10</p>
+            <p className="text-xs text-white/50 mb-5">
+              지급예정일: {year}-{month}-10
+            </p>
 
             <div className="h-px bg-white/10 mb-4" />
             <div className="grid grid-cols-2 gap-4 text-sm">
@@ -228,7 +225,9 @@ const HomePage = () => {
               </div>
               <div>
                 <p className="text-white/50 text-xs mb-1">공제 합계</p>
-                <p className="font-semibold text-red-300">{payData.total_deduction.toLocaleString()}원</p>
+                <p className="font-semibold text-red-300">
+                  {payData.total_deduction.toLocaleString()}원
+                </p>
               </div>
             </div>
           </div>

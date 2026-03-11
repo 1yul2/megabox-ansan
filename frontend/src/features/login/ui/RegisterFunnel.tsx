@@ -1,7 +1,6 @@
-import { useState } from 'react';
-
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ChevronLeft, CheckCircle2, Eye, EyeOff } from 'lucide-react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 
@@ -57,7 +56,7 @@ function formatBirthDate(raw: string): string {
 // ── Main Funnel ────────────────────────────────────────────────────────────
 
 export function RegisterFunnel({ onBack }: RegisterFunnelProps) {
-  const [step, setStep]         = useState<FunnelStep>(1);
+  const [step, setStep] = useState<FunnelStep>(1);
   const [formData, setFormData] = useState<Partial<RegisterFormData>>({});
 
   const { mutate: register, isPending } = useRegisterMutation();
@@ -67,19 +66,19 @@ export function RegisterFunnel({ onBack }: RegisterFunnelProps) {
 
     register(
       {
-        username:   merged.username,
-        password:   merged.password,
-        name:       merged.name,
-        gender:     merged.gender,
+        username: merged.username,
+        password: merged.password,
+        name: merged.name,
+        gender: merged.gender,
         birth_date: merged.birth_date,
-        ssn:        merged.ssn,
-        phone:      merged.phone,
-        email:      merged.email,
-        bank_name:          merged.bank_name || undefined,
-        account_number:     merged.account_number || undefined,
-        hire_date:          merged.hire_date || undefined,
+        ssn: merged.ssn,
+        phone: merged.phone,
+        email: merged.email,
+        bank_name: merged.bank_name || undefined,
+        account_number: merged.account_number || undefined,
+        hire_date: merged.hire_date || undefined,
         health_cert_expire: merged.health_cert_expire || undefined,
-        unavailable_days:   merged.unavailable_days || undefined,
+        unavailable_days: merged.unavailable_days || undefined,
       },
       {
         onSuccess: () => setStep('done'),
@@ -104,7 +103,7 @@ export function RegisterFunnel({ onBack }: RegisterFunnelProps) {
       <div className="flex items-center gap-3">
         <button
           type="button"
-          onClick={step === 1 ? onBack : () => setStep((s) => (s as number) - 1 as FunnelStep)}
+          onClick={step === 1 ? onBack : () => setStep((s) => ((s as number) - 1) as FunnelStep)}
           className="text-mega-gray hover:text-mega transition-colors p-1 rounded-md hover:bg-mega/10"
         >
           <ChevronLeft size={20} />
@@ -143,11 +142,7 @@ export function RegisterFunnel({ onBack }: RegisterFunnelProps) {
         />
       )}
       {step === 3 && (
-        <Step3
-          defaultValues={formData}
-          onSubmit={handleComplete}
-          isPending={isPending}
-        />
+        <Step3 defaultValues={formData} onSubmit={handleComplete} isPending={isPending} />
       )}
     </div>
   );
@@ -161,18 +156,18 @@ function Step1({
   defaultValues: Partial<RegisterFormData>;
   onNext: (data: RegisterStep1Type) => void;
 }) {
-  const [showPw, setShowPw]     = useState(false);
-  const [showPwC, setShowPwC]   = useState(false);
+  const [showPw, setShowPw] = useState(false);
+  const [showPwC, setShowPwC] = useState(false);
 
   const form = useForm<RegisterStep1Type>({
     resolver: zodResolver(registerStep1Schema),
     defaultValues: {
-      username:        defaultValues.username ?? '',
-      password:        defaultValues.password ?? '',
+      username: defaultValues.username ?? '',
+      password: defaultValues.password ?? '',
       passwordConfirm: '',
-      name:            defaultValues.name ?? '',
-      gender:          defaultValues.gender ?? undefined,
-      birth_date:      defaultValues.birth_date ?? '',
+      name: defaultValues.name ?? '',
+      gender: defaultValues.gender ?? undefined,
+      birth_date: defaultValues.birth_date ?? '',
     },
   });
 
@@ -193,7 +188,9 @@ function Step1({
             placeholder="영문, 숫자, _ 사용 가능 (3~50자)"
           />
           {username.length >= 3 && checkResult && (
-            <p className={`text-xs text-right ${checkResult.available ? 'text-green-500' : 'text-red-500'}`}>
+            <p
+              className={`text-xs text-right ${checkResult.available ? 'text-green-500' : 'text-red-500'}`}
+            >
               {checkResult.message}
             </p>
           )}
@@ -238,18 +235,18 @@ function Step1({
         </div>
 
         {/* 이름 */}
-        <RHFInput
-          form={form}
-          name="name"
-          label="이름 *"
-          placeholder="실명을 입력해주세요"
-        />
+        <RHFInput form={form} name="name" label="이름 *" placeholder="실명을 입력해주세요" />
 
         {/* 성별 */}
         <div className="flex flex-col gap-1">
           <label className="text-sm font-medium">성별 *</label>
           <div className="flex gap-2">
-            {([['남', '남성'], ['여', '여성']] as const).map(([value, label]) => {
+            {(
+              [
+                ['남', '남성'],
+                ['여', '여성'],
+              ] as const
+            ).map(([value, label]) => {
               const selected = form.watch('gender') === value;
               return (
                 <button
@@ -307,7 +304,7 @@ function Step2({
   const form = useForm<RegisterStep2Type>({
     resolver: zodResolver(registerStep2Schema),
     defaultValues: {
-      ssn:   defaultValues.ssn   ?? '',
+      ssn: defaultValues.ssn ?? '',
       phone: defaultValues.phone ?? '',
       email: defaultValues.email ?? '',
     },
@@ -371,11 +368,11 @@ function Step3({
   const form = useForm<RegisterStep3Type>({
     resolver: zodResolver(registerStep3Schema),
     defaultValues: {
-      bank_name:          defaultValues.bank_name          ?? '',
-      account_number:     defaultValues.account_number     ?? '',
-      hire_date:          defaultValues.hire_date          ?? '',
+      bank_name: defaultValues.bank_name ?? '',
+      account_number: defaultValues.account_number ?? '',
+      hire_date: defaultValues.hire_date ?? '',
       health_cert_expire: defaultValues.health_cert_expire ?? '',
-      unavailable_days:   defaultValues.unavailable_days   ?? [],
+      unavailable_days: defaultValues.unavailable_days ?? [],
     },
   });
 
@@ -392,17 +389,14 @@ function Step3({
   return (
     <Form {...form}>
       <form onSubmit={(e) => void form.handleSubmit(onSubmit)(e)} className="flex flex-col gap-4">
-        <h3 className="font-semibold text-sm text-mega">추가 정보 <span className="text-mega-gray font-normal">(선택)</span></h3>
+        <h3 className="font-semibold text-sm text-mega">
+          추가 정보 <span className="text-mega-gray font-normal">(선택)</span>
+        </h3>
 
         {/* 은행 + 계좌번호 */}
         <div className="flex gap-2">
           <div className="flex-1">
-            <RHFInput
-              form={form}
-              name="bank_name"
-              label="은행명"
-              placeholder="카카오뱅크"
-            />
+            <RHFInput form={form} name="bank_name" label="은행명" placeholder="카카오뱅크" />
           </div>
           <div className="flex-[2]">
             <RHFInput
@@ -483,9 +477,7 @@ function CompletedStep({ onBack }: { onBack: () => void }) {
       </div>
       <div>
         <h3 className="font-semibold text-base">가입 신청 완료!</h3>
-        <p className="text-sm text-mega-gray mt-1">
-          관리자 승인 후 로그인하실 수 있습니다.
-        </p>
+        <p className="text-sm text-mega-gray mt-1">관리자 승인 후 로그인하실 수 있습니다.</p>
       </div>
       <Button
         variant="outline"

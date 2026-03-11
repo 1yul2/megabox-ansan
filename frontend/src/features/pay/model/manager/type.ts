@@ -1,4 +1,4 @@
-import type { PayrollData } from "../type";
+import type { PayrollData } from '../type';
 
 interface Column<T> {
   key: keyof T;

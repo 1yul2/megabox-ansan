@@ -46,10 +46,10 @@ export const useCommunityPostsQuery = (params: GetCommunityPostsParams) => {
   const { category, page, page_size } = params;
 
   return useQuery({
-  queryKey: ['communityPosts', category, page, page_size],
-  queryFn: () => getCommunityPosts(params),
-  refetchOnMount: 'always',
-});
+    queryKey: ['communityPosts', category, page, page_size],
+    queryFn: () => getCommunityPosts(params),
+    refetchOnMount: 'always',
+  });
 };
 
 // DETAIL

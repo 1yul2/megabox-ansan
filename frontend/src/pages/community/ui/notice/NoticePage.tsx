@@ -4,10 +4,10 @@ import { useState } from 'react';
 import { Badge } from '../../../../features/community/ui/badge';
 import CommunityModal from '../../../../features/community/ui/modal/CommunityModal';
 
+import { useUserQuery } from '@/entities/user/api/queries';
 import { hasAdminAccess } from '@/entities/user/model/role';
 import { useCommunityPostsQuery } from '@/features/community/api/queries';
 import { BoardPage } from '@/features/community/ui/main/BoardPage';
-import { useUserQuery } from '@/entities/user/api/queries';
 
 export default function NoticePage() {
   const { data: user } = useUserQuery();

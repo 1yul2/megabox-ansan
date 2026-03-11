@@ -1,18 +1,16 @@
 import { payColumns, insuranceColumns } from '../model/user/dataColumns';
 
-import type { UserPositionProps } from '../model/user/type';
 import { Item } from './userItem';
 import { Section } from './userSection';
+
+import type { UserPositionProps } from '../model/user/type';
 
 export default function UserPosition({ data }: UserPositionProps) {
   return (
     <div className="flex justify-center pb-16 px-4">
       <div className="w-full max-w-3xl bg-white rounded-2xl shadow-lg overflow-hidden">
-
         <div className="bg-mega text-white px-6 py-6">
-          <div className="text-2xl font-bold text-center mb-3">
-            급여 명세서
-          </div>
+          <div className="text-2xl font-bold text-center mb-3">급여 명세서</div>
 
           <div className="flex justify-between items-center text-sm opacity-90">
             <div>

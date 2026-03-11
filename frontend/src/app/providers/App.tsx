@@ -1,6 +1,5 @@
-import { useEffect, useState } from 'react';
-
 import axios from 'axios';
+import { useEffect, useState } from 'react';
 import { RouterProvider } from 'react-router';
 
 import '../global/App.css';
@@ -10,6 +9,7 @@ import QueryProvider from './QueryProvider';
 import ToastProvider from './ToastProvider';
 
 import type { User } from '@/entities/user/model/user';
+
 import { useAuthStore } from '@/shared/model/authStore';
 
 const BASE_URL = (import.meta.env.VITE_BASE_URL as string) || 'http://localhost:8000';
