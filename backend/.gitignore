@@ -48,6 +48,9 @@ docker-compose.override.yml
 *.img
 *.bak
 
+# DB
+**/
+
 # ▶️ Migrations (Alembic, if used)
 alembic.ini
 alembic/
@@ -97,6 +100,9 @@ yarn-error.log*
 # ▶️ YAML config files
 *.yml
 *.yaml
+
+# ▶️ Local-specific files
+app/main.py
 
 # ============================================
 # End of .gitignore
