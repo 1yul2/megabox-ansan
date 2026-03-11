@@ -1,2 +1,2 @@
-*.yml
-*.yaml
+# skip-worktree로 관리하는 파일들은 여기서 제외
+# docker-compose.yml, backend/app/main.py → git update-index --skip-worktree 사용
