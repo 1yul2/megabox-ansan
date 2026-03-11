@@ -1,47 +1,67 @@
-import { useState } from 'react';
-
-import { Input } from '@/shared/components/ui/input';
+import { memo, useState } from 'react';
+import { Send } from 'lucide-react';
+import { cn } from '@/shared/lib/utils';
 
 interface CommentFormProps {
   onSubmit: (content: string) => void;
   isLoading?: boolean;
 }
 
-export default function CommentForm({ onSubmit, isLoading }: CommentFormProps) {
+const CommentForm = memo(({ onSubmit, isLoading }: CommentFormProps) => {
   const [content, setContent] = useState('');
+  const isEmpty = !content.trim();
 
   const handleSubmit = () => {
-    if (!content.trim()) return;
-    onSubmit(content);
+    if (isEmpty || isLoading) return;
+    onSubmit(content.trim());
     setContent('');
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    // 엔터 사용 시 중복 등록 에러 (한글 조합을 확정하기 위한 Enter 이벤트 제거)
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.nativeEvent.isComposing) return;
-    // input 은 shift/enter 미지원 ...
-    if (e.key === 'Enter') {
+    if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSubmit();
     }
   };
 
   return (
-    <div className="flex gap-2">
-      <Input
-        value={content}
-        onChange={(e) => setContent(e.target.value)}
-        onKeyDown={handleKeyDown}
-        className="flex-1 border rounded p-2 text-sm bg-white placeholder:text-gray-400 placeholder:text-xs h-10"
-        placeholder="댓글을 입력하세요 (Enter: 등록, Shift+Enter: 줄바꿈)"
-      />
+    <div className="flex gap-3 items-end">
+      <div className="flex-1 relative">
+        <textarea
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="댓글을 입력하세요  (Enter: 등록, Shift+Enter: 줄바꿈)"
+          rows={2}
+          className={cn(
+            'w-full resize-none rounded-2xl border px-4 py-3 text-sm leading-relaxed',
+            'placeholder:text-gray-400 bg-gray-50 transition-all',
+            'focus:outline-none focus:ring-2 focus:ring-[#5b31a5]/20 focus:border-[#5b31a5]/40 focus:bg-white',
+            'border-gray-200',
+          )}
+        />
+      </div>
       <button
+        type="button"
         onClick={handleSubmit}
-        disabled={isLoading}
-        className="px-4 bg-mega text-white rounded text-sm"
+        disabled={isEmpty || isLoading}
+        className={cn(
+          'flex items-center justify-center w-10 h-10 rounded-2xl transition-all duration-150 shrink-0 mb-0.5',
+          'disabled:opacity-40 disabled:cursor-not-allowed',
+          isEmpty || isLoading
+            ? 'bg-gray-100 text-gray-400'
+            : 'bg-[#351f66] text-white hover:bg-[#1a0f3c] shadow-sm active:scale-95',
+        )}
       >
-        등록
+        {isLoading
+          ? <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+          : <Send className="size-4" />
+        }
       </button>
     </div>
   );
-}
+});
+
+CommentForm.displayName = 'CommentForm';
+export default CommentForm;

@@ -32,6 +32,7 @@ class PostCreate(PostBase):
     """
 
     category: CategoryEnum = Field(..., description="게시글 카테고리")
+    tags: List[str] = Field(default_factory=list, description="태그 목록 (최대 5개)")
 
 
 class CommentCreate(CommentBase):
@@ -44,11 +45,12 @@ class CommentCreate(CommentBase):
 
 class PostUpdate(BaseModel):
     """
-    게시글 수정 (제목, 내용)
+    게시글 수정 (제목, 내용, 태그)
     """
 
     title: Optional[str] = Field(None, max_length=255, description="수정할 제목")
     content: Optional[str] = Field(None, description="수정할 내용")
+    tags: Optional[List[str]] = Field(None, description="수정할 태그 목록")
 
 
 class CommentUpdate(BaseModel):
@@ -100,6 +102,9 @@ class PostListResponse(BaseModel):
     updated_at: datetime
 
     comments_count: int
+    tags: List[str] = Field(default_factory=list)
+    likes_count: int = 0
+    liked_by_me: bool = False
 
     class Config:
         from_attributes = True
@@ -125,6 +130,9 @@ class PostResponse(BaseModel):
     updated_at: datetime
 
     comments_count: int
+    tags: List[str] = Field(default_factory=list)
+    likes_count: int = 0
+    liked_by_me: bool = False
 
     class Config:
         from_attributes = True

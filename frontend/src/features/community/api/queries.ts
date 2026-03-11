@@ -11,6 +11,8 @@ import {
   updateComment,
   deleteComment,
   getCategoryCounts,
+  likePost,
+  unlikePost,
 } from './service';
 
 import type {
@@ -20,6 +22,14 @@ import type {
   CommentsResponseDTO,
   CategoryCountsResponse,
 } from './dto';
+
+// 쿼리키 팩토리
+export const communityKeys = {
+  posts: (params: GetCommunityPostsParams) => ['communityPosts', params] as const,
+  post: (id: number) => ['communityPost', id] as const,
+  comments: (postId: number, page: number) => ['comments', postId, page] as const,
+  categoryCounts: () => ['community', 'category-counts'] as const,
+};
 
 // 🔖 게시글
 // POST
@@ -43,12 +53,11 @@ export function useCreatePostMutation() {
 
 // LIST
 export const useCommunityPostsQuery = (params: GetCommunityPostsParams) => {
-  const { category, page, page_size } = params;
-
   return useQuery({
-    queryKey: ['communityPosts', category, page, page_size],
+    queryKey: communityKeys.posts(params),
     queryFn: () => getCommunityPosts(params),
-    refetchOnMount: 'always',
+    staleTime: 1000 * 30,
+    placeholderData: (prev) => prev,
   });
 };
 
@@ -153,6 +162,42 @@ export function useDeleteCommentMutation(postId: number) {
       void queryClient.invalidateQueries({
         queryKey: ['comments', postId],
       });
+    },
+  });
+}
+
+// 🔖 좋아요 (낙관적 업데이트)
+export function useLikePostMutation(postId: number) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ liked }: { liked: boolean }) =>
+      liked ? unlikePost(postId) : likePost(postId),
+
+    onMutate: async ({ liked }) => {
+      await queryClient.cancelQueries({ queryKey: communityKeys.post(postId) });
+      const prev = queryClient.getQueryData<CommunityPostDTO>(communityKeys.post(postId));
+
+      queryClient.setQueryData<CommunityPostDTO>(communityKeys.post(postId), (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          liked_by_me: !liked,
+          likes_count: (old.likes_count ?? 0) + (liked ? -1 : 1),
+        };
+      });
+
+      return { prev };
+    },
+
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.prev) {
+        queryClient.setQueryData(communityKeys.post(postId), ctx.prev);
+      }
+    },
+
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: communityKeys.post(postId) });
     },
   });
 }

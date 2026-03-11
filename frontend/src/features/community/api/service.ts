@@ -79,3 +79,14 @@ export const deleteComment = (comment_id: number) =>
   apiClient.delete<{ success: boolean }>({
     url: `/api/community/comments/${comment_id}`,
   });
+
+// 🔖 좋아요 (백엔드 구현 필요: POST/DELETE /api/community/posts/{id}/like)
+export const likePost = (id: number) =>
+  apiClient.post<{ likes_count: number; liked_by_me: boolean }>({
+    url: `/api/community/posts/${id}/like`,
+  });
+
+export const unlikePost = (id: number) =>
+  apiClient.delete<{ likes_count: number; liked_by_me: boolean }>({
+    url: `/api/community/posts/${id}/like`,
+  });

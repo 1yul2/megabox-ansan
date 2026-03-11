@@ -48,6 +48,18 @@ class Post(TimeStampedMixin, Base):
         cascade="all, delete-orphan",
         passive_deletes=True,
     )
+    tags = relationship(
+        "PostTag",
+        back_populates="post",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    likes = relationship(
+        "PostLike",
+        back_populates="post",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
 
     def __repr__(self):
         short_title = (
@@ -59,6 +71,44 @@ class Post(TimeStampedMixin, Base):
             f"[CommunityPost] id={self.id}, category={self.category.value}, "
             f"title={short_title}, author_id={self.author_id}, "
         )
+
+
+class PostTag(Base):
+    __tablename__ = "community_post_tag"
+
+    id = Column(Integer, primary_key=True, index=True)
+    post_id = Column(
+        Integer,
+        ForeignKey("community_post.id", ondelete="CASCADE"),
+        nullable=False,
+        comment="대상 게시글 id",
+    )
+    name = Column(String(50), nullable=False, comment="태그 이름")
+
+    post = relationship("Post", back_populates="tags")
+
+
+class PostLike(Base):
+    __tablename__ = "community_post_like"
+    __table_args__ = (
+        UniqueConstraint("user_id", "post_id", name="uq_post_like_user_post"),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    post_id = Column(
+        Integer,
+        ForeignKey("community_post.id", ondelete="CASCADE"),
+        nullable=False,
+        comment="대상 게시글 id",
+    )
+    user_id = Column(
+        Integer,
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        comment="유저 id",
+    )
+
+    post = relationship("Post", back_populates="likes")
 
 
 class CommentLike(Base):

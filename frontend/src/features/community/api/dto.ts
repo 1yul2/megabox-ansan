@@ -3,6 +3,7 @@ export interface CreatePostRequestDTO {
   title: string;
   content: string;
   category: '공지' | '자유게시판' | '근무교대' | '휴무신청';
+  tags?: string[];
 }
 
 export interface CreatePostResponseDTO {
@@ -38,6 +39,10 @@ export interface CommunityPostDTO {
   created_at: string;
   updated_at: string;
   comments: CommentDTO[];
+  comments_count?: number;
+  tags?: string[];
+  likes_count?: number;
+  liked_by_me?: boolean;
 }
 
 // 게시글 DTO (2)
@@ -74,6 +79,7 @@ export interface GetCommunityPostsParams {
   page_size?: number;
   search?: string;
   order?: 'latest' | 'oldest' | 'popular';
+  tag?: string;
 }
 
 // 카테고리별 글 갯수

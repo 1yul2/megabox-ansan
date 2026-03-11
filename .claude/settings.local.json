@@ -9,7 +9,12 @@
       "Bash(cd C:/Users/megaa/OneDrive/Desktop/megabox/frontend && npm run build 2>&1 | head -80)",
       "Bash(cd \"C:/Users/megaa/OneDrive/Desktop/megabox/frontend\" && cmd.exe /c \"npm run build\" 2>&1 | head -100)",
       "Bash(cmd.exe /c \"cd C:\\\\\\\\Users\\\\\\\\megaa\\\\\\\\OneDrive\\\\\\\\Desktop\\\\\\\\megabox\\\\\\\\frontend && npm run build 2>&1\")",
-      "Bash(powershell.exe -Command \"where.exe node; where.exe npx\" 2>&1)"
+      "Bash(powershell.exe -Command \"where.exe node; where.exe npx\" 2>&1)",
+      "Bash(find /c/Users/megaa/OneDrive/Desktop/megabox/frontend/src/entities -name \"*post*\" -o -name \"*comment*\" 2>/dev/null | grep -E \"\\\\.\\(ts|tsx\\)$\")",
+      "Bash(npx tsc:*)",
+      "Bash(node_modules/.bin/tsc --noEmit 2>&1 | head -80)",
+      "Bash(node node_modules/typescript/bin/tsc --noEmit 2>&1 | head -80)",
+      "Bash(find /c/Users/megaa/OneDrive/Desktop/megabox/backend -name \"*.py\" | xargs grep -l \"create_all\\\\|Base.metadata\" 2>/dev/null | head -5)"
     ]
   }
 }

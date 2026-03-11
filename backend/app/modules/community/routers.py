@@ -102,7 +102,8 @@ def list_posts(
     category: CategoryEnum | None = Query(None, description="카테고리 필터"),
     search_scope: SearchScope = Query(SearchScope.all, description="검색 범위"),
     search: str | None = Query(None, description="검색어"),
-    order_by: OrderBy = Query(OrderBy.latest, description="정렬 기준"),
+    order: OrderBy = Query(OrderBy.latest, alias="order", description="정렬 기준"),
+    tag: str | None = Query(None, description="태그 필터"),
     from_date: date | None = Query(
         None, description="작성일이 해당 날짜 이후인 게시글 검색 (YYYY-MM-DD)"
     ),
@@ -132,9 +133,10 @@ def list_posts(
         page_size=pagination.page_size,
         search=search,
         search_scope=search_scope.value,
-        order_by=order_by.value,
+        order_by=order.value,
         from_date=from_date,
         to_date=to_date,
+        tag=tag,
     )
 
 
@@ -175,6 +177,31 @@ def delete_post(
     - notice/shift/dayoff는 관리자만 삭제 가능
     """
     return services.delete_post(db, user, post_id)
+
+
+# 게시글 좋아요 API -----
+@router.post("/posts/{post_id}/like", summary="게시글 좋아요")
+def like_post(
+    post_id: int,
+    db: Session = Depends(get_db),
+    user=Depends(get_community_user),
+):
+    """
+    게시글 좋아요 추가 (중복 불가)
+    """
+    return services.like_post(db=db, user=user, post_id=post_id)
+
+
+@router.delete("/posts/{post_id}/like", summary="게시글 좋아요 취소")
+def unlike_post(
+    post_id: int,
+    db: Session = Depends(get_db),
+    user=Depends(get_community_user),
+):
+    """
+    게시글 좋아요 취소
+    """
+    return services.unlike_post(db=db, user=user, post_id=post_id)
 
 
 # 댓글 API -----

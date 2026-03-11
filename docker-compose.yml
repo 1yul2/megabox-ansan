@@ -7,7 +7,7 @@ services:
     container_name: megabox-db
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: rudwns9551
+      MYSQL_ROOT_PASSWORD: dkstkswnddkd!1
       MYSQL_DATABASE: megabox
       TZ: Asia/Seoul
     ports:
@@ -15,16 +15,7 @@ services:
     volumes:
       - db_data:/var/lib/mysql
     healthcheck:
-      test:
-        [
-          "CMD",
-          "mysqladmin",
-          "ping",
-          "-h",
-          "localhost",
-          "-uroot",
-          "-prudwns9551",
-        ]
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -44,7 +35,7 @@ services:
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 10s
       timeout: 5s
       retries: 5

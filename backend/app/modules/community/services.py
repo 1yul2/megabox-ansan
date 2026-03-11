@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.core.pagination import paginate
 from app.modules.auth.models import User
-from app.modules.community.models import CategoryEnum, Comment, CommentLike, Post
+from app.modules.community.models import CategoryEnum, Comment, CommentLike, Post, PostLike, PostTag
 from app.modules.community.permissions import (
     can_delete_comment,
     can_delete_post,
@@ -79,10 +79,17 @@ def create_post(db: Session, user, data: PostCreate) -> PostResponse:
     )
 
     db.add(post)
+    db.flush()  # post.id 확보
+
+    for tag_name in (data.tags or [])[:5]:
+        name = tag_name.strip().lower().lstrip("#")
+        if name:
+            db.add(PostTag(post_id=post.id, name=name))
+
     db.commit()
     db.refresh(post)
 
-    return _build_post_response(db, post)
+    return _build_post_response(db, post, user)
 
 
 def get_post(db: Session, post_id: int, user) -> PostResponse:
@@ -99,7 +106,7 @@ def get_post(db: Session, post_id: int, user) -> PostResponse:
     if not post:
         raise HTTPException(404, "게시글을 찾을 수 없습니다.")
 
-    return _build_post_response(db, post)
+    return _build_post_response(db, post, user)
 
 
 def list_posts(
@@ -114,6 +121,7 @@ def list_posts(
     order_by: str = "latest",
     from_date: date | None = None,
     to_date: date | None = None,
+    tag: str | None = None,
 ) -> PaginatedResponse[PostListResponse]:
     """
     게시글 목록 조회
@@ -149,6 +157,13 @@ def list_posts(
         elif search_scope == "author":
             query = query.join(Post.author).filter(User.name.ilike(search_pattern))
 
+    # 태그 필터
+    if tag:
+        tag_clean = tag.strip().lower().lstrip("#")
+        query = query.join(PostTag, Post.id == PostTag.post_id).filter(
+            PostTag.name == tag_clean
+        )
+
     # 날짜 필터
     if from_date:
         query = query.filter(Post.created_at >= from_date)
@@ -176,7 +191,7 @@ def list_posts(
             func.coalesce(comment_count.c.count, 0).desc(), Post.created_at.desc()
         )
 
-    return paginate(query, page, page_size, lambda p: _build_post_list_response(db, p))
+    return paginate(query, page, page_size, lambda p: _build_post_list_response(db, p, user))
 
 
 def update_post(db: Session, user, post_id: int, data: PostUpdate) -> PostResponse:
@@ -198,10 +213,18 @@ def update_post(db: Session, user, post_id: int, data: PostUpdate) -> PostRespon
     if data.content is not None:
         post.content = data.content
 
+    if data.tags is not None:
+        # 기존 태그 삭제 후 재등록
+        db.query(PostTag).filter(PostTag.post_id == post.id).delete()
+        for tag_name in data.tags[:5]:
+            name = tag_name.strip().lower().lstrip("#")
+            if name:
+                db.add(PostTag(post_id=post.id, name=name))
+
     db.commit()
     db.expire(post)  # 세션 캐시 무효화
 
-    return _build_post_response(db, post)
+    return _build_post_response(db, post, user)
 
 
 def delete_post(db: Session, user, post_id: int):
@@ -310,6 +333,60 @@ def delete_comment(db: Session, user, comment_id: int):
     return {"message": "댓글이 삭제되었습니다."}
 
 
+def like_post(db: Session, user, post_id: int):
+    """
+    게시글 좋아요
+    """
+    post = db.query(Post).filter(Post.id == post_id).first()
+    if not post:
+        raise HTTPException(404, "게시글을 찾을 수 없습니다.")
+
+    existing = (
+        db.query(PostLike)
+        .filter(PostLike.post_id == post_id, PostLike.user_id == user.id)
+        .first()
+    )
+    if existing:
+        raise HTTPException(400, "이미 좋아요를 눌렀습니다.")
+
+    db.add(PostLike(post_id=post_id, user_id=user.id))
+    db.commit()
+
+    likes_count = (
+        db.query(func.count(PostLike.id))
+        .filter(PostLike.post_id == post_id)
+        .scalar()
+    )
+    return {"liked_by_me": True, "likes_count": likes_count}
+
+
+def unlike_post(db: Session, user, post_id: int):
+    """
+    게시글 좋아요 취소
+    """
+    post = db.query(Post).filter(Post.id == post_id).first()
+    if not post:
+        raise HTTPException(404, "게시글을 찾을 수 없습니다.")
+
+    existing = (
+        db.query(PostLike)
+        .filter(PostLike.post_id == post_id, PostLike.user_id == user.id)
+        .first()
+    )
+    if not existing:
+        raise HTTPException(400, "좋아요를 누르지 않았습니다.")
+
+    db.delete(existing)
+    db.commit()
+
+    likes_count = (
+        db.query(func.count(PostLike.id))
+        .filter(PostLike.post_id == post_id)
+        .scalar()
+    )
+    return {"liked_by_me": False, "likes_count": likes_count}
+
+
 def toggle_comment_like(db: Session, user, comment_id: int):
     existing = (
         db.query(CommentLike)
@@ -332,11 +409,33 @@ def toggle_comment_like(db: Session, user, comment_id: int):
 
 
 # sqlalchemy Post -> pydantic PostResponse (응답 스키마 변환) -----
-def _build_post_list_response(db: Session, post: Post, user=None) -> PostListResponse:
-    # 댓글 개수 계산
+def _post_common_fields(db: Session, post: Post, user=None) -> dict:
+    """공통 필드 계산 (댓글 수, 태그, 좋아요)"""
     comments_count = (
         db.query(func.count(Comment.id)).filter(Comment.post_id == post.id).scalar()
     )
+    tags = [t.name for t in db.query(PostTag).filter(PostTag.post_id == post.id).all()]
+    likes_count = (
+        db.query(func.count(PostLike.id)).filter(PostLike.post_id == post.id).scalar()
+    )
+    liked_by_me = False
+    if user:
+        liked_by_me = db.query(
+            exists().where(
+                and_(PostLike.post_id == post.id, PostLike.user_id == user.id)
+            )
+        ).scalar()
+
+    return {
+        "comments_count": comments_count,
+        "tags": tags,
+        "likes_count": likes_count,
+        "liked_by_me": liked_by_me,
+    }
+
+
+def _build_post_list_response(db: Session, post: Post, user=None) -> PostListResponse:
+    common = _post_common_fields(db, post, user)
 
     return PostListResponse(
         id=post.id,
@@ -348,15 +447,12 @@ def _build_post_list_response(db: Session, post: Post, user=None) -> PostListRes
         author_position=post.author.position,
         created_at=post.created_at,
         updated_at=post.updated_at,
-        comments_count=comments_count,
+        **common,
     )
 
 
-def _build_post_response(db: Session, post: Post) -> PostResponse:
-    # 상세 조회용 (댓글 리스트 제외, 개수만 포함)
-    comments_count = (
-        db.query(func.count(Comment.id)).filter(Comment.post_id == post.id).scalar()
-    )
+def _build_post_response(db: Session, post: Post, user=None) -> PostResponse:
+    common = _post_common_fields(db, post, user)
 
     return PostResponse(
         id=post.id,
@@ -369,7 +465,7 @@ def _build_post_response(db: Session, post: Post) -> PostResponse:
         system_generated=post.system_generated,
         created_at=post.created_at,
         updated_at=post.updated_at,
-        comments_count=comments_count,
+        **common,
     )
 
 
