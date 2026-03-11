@@ -1,8 +1,6 @@
 import { useState } from 'react';
 
 import UserPosition from '../../features/pay/ui/UserPosition';
-import logo from '../../shared/assets/logo/Megabox_Logo_Indigo.png';
-
 import { ManagerPositions } from '@/features/pay';
 import { usePayrollQuery } from '@/features/pay/api/queries';
 import { mapToManagerPayroll } from '@/features/pay/model/manager/mapper';
@@ -11,6 +9,7 @@ import PeriodSelector from '@/features/pay/ui/PeriodSelector';
 import { EmptyBox } from './ui/EmptyBox';
 import { useAuthStore } from '@/shared/model/authStore';
 import { USER_ROLES } from '@/entities/user/model/role';
+import { DollarSign } from 'lucide-react';
 
 export default function PayPage() {
   const currentYear = new Date().getFullYear();
@@ -24,63 +23,69 @@ export default function PayPage() {
     month: selectedMonth,
   });
 
-  // 데이터 없을 때 응답값: 유저 - null / 매니저 - 빈 배열
   const isEmptyPayroll =
     !payrollList ||
     (Array.isArray(payrollList) && payrollList.length === 0) ||
     (!Array.isArray(payrollList) && payrollList.name === '');
 
-  const { user } = useAuthStore(); // 예시
-
-const isUser = user?.position === USER_ROLES.CREW;
-  
-  const selector = (
-    <PeriodSelector
-      selectedYear={selectedYear}
-      selectedMonth={selectedMonth}
-      onChangeYear={setSelectedYear}
-      onChangeMonth={setSelectedMonth}
-    />
-  );
+  const { user } = useAuthStore();
+  const isUser = user?.position === USER_ROLES.CREW;
 
   return (
-    <div className="flex flex-col gap-5 w-full">
-      <img src={logo} alt="logo" className="w-50 self-center mb-4" />
-
-
-    {isUser ? (
-      <div className="flex justify-center px-4">
-        <div className="w-full max-w-3xl">{selector}</div>
-      </div>
-    ) : (
-      selector
-    )}
-
-      
-      {isEmptyPayroll && (
-        isUser ? (
-          <div className="flex justify-center px-4">
-            <div className="w-full max-w-3xl">
-              <EmptyBox
-                selectedYear={selectedYear}
-                selectedMonth={selectedMonth}
-              />
-            </div>
+    <div className="flex flex-col gap-6">
+      {/* ── 페이지 헤더 ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-[#5b31a5]/10">
+            <DollarSign className="size-5 text-[#5b31a5]" />
           </div>
-        ) : (
-          <EmptyBox
+          <div>
+            <h1 className="text-xl font-bold text-gray-900">급여 현황</h1>
+            <p className="text-sm text-gray-500">
+              {selectedYear}년 {selectedMonth}월 급여 내역
+            </p>
+          </div>
+        </div>
+
+        {/* 기간 선택 */}
+        <div className={isUser ? 'w-full sm:w-auto' : 'w-full'}>
+          <PeriodSelector
             selectedYear={selectedYear}
             selectedMonth={selectedMonth}
+            onChangeYear={setSelectedYear}
+            onChangeMonth={setSelectedMonth}
           />
-        )
-      )}
+        </div>
+      </div>
 
-      {!isEmptyPayroll && payrollList && !Array.isArray(payrollList) && (
-        <UserPosition data={mapToUserPayroll(payrollList)} />
-      )}
-
-      {!isEmptyPayroll && payrollList && Array.isArray(payrollList) && (
-        <ManagerPositions filteredData={mapToManagerPayroll(payrollList)} />
+      {/* ── 콘텐츠 ── */}
+      {isUser ? (
+        <div className="flex justify-center">
+          <div className="w-full max-w-2xl">
+            {isEmptyPayroll ? (
+              <EmptyBox selectedYear={selectedYear} selectedMonth={selectedMonth} />
+            ) : (
+              payrollList && !Array.isArray(payrollList) && (
+                <UserPosition data={mapToUserPayroll(payrollList)} />
+              )
+            )}
+          </div>
+        </div>
+      ) : (
+        <>
+          {isEmptyPayroll ? (
+            <EmptyBox selectedYear={selectedYear} selectedMonth={selectedMonth} />
+          ) : (
+            <>
+              {payrollList && !Array.isArray(payrollList) && (
+                <UserPosition data={mapToUserPayroll(payrollList)} />
+              )}
+              {payrollList && Array.isArray(payrollList) && (
+                <ManagerPositions filteredData={mapToManagerPayroll(payrollList)} />
+              )}
+            </>
+          )}
+        </>
       )}
     </div>
   );

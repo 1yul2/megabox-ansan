@@ -61,6 +61,9 @@
   --color-mega-gray-mid: #7c7979;
   --color-mega-gray-light: #d9d9d9;
   --color-red-light: #ff9696;
+
+  --color-nav-bg: #1a0f3c;         /* NEW: sidebar background */
+  --color-app-bg: #F5F6FA;          /* NEW: app background */
 }
 
 :root {
@@ -137,6 +140,6 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-mega-white-gray text-foreground;
+    @apply bg-[#F5F6FA] text-foreground;
   }
 }

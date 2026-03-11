@@ -1,13 +1,24 @@
-import { Menu, X } from 'lucide-react';
+import { LogOut } from 'lucide-react';
+import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
-
 import { NAV_ITEMS, type NavItemConfig } from '../model/nav.config';
-
 import NavItem from './NavItem';
-
 import { useUserQuery } from '@/entities/user/api/queries';
+import { useLogoutMutation } from '@/features/login/api/queries';
+import logo from '@/shared/assets/logo/LogowithText_white.png';
+import { Avatar, AvatarFallback } from '@/shared/components/ui/avatar';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/shared/components/ui/dialog';
 import { Button } from '@/shared/components/ui/button';
 import { cn } from '@/shared/lib/utils';
+import { ROUTES } from '@/shared/constants/routes';
+import { Link } from 'react-router';
 
 interface SideNavProps {
   isOpen?: boolean;
@@ -18,11 +29,11 @@ const SideNav = ({ isOpen = false, onClose }: SideNavProps) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { data: user } = useUserQuery();
+  const { mutate: logout } = useLogoutMutation();
+  const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
 
   const isActive = (item: NavItemConfig) => {
-    if (item.exact) {
-      return location.pathname === item.path;
-    }
+    if (item.exact) return location.pathname === item.path;
     return location.pathname.startsWith(item.path);
   };
 
@@ -37,45 +48,108 @@ const SideNav = ({ isOpen = false, onClose }: SideNavProps) => {
     onClose?.();
   };
 
-  return (
-    <>
-      {/* 모바일/태블릿 딤드 backdrop */}
-      {isOpen && <div className="fixed inset-0 bg-black/40 z-30 md:hidden" onClick={onClose} />}
+  const handleLogout = () => {
+    logout();
+    setLogoutDialogOpen(false);
+  };
 
-      <nav
-        className={cn(
-          'fixed top-14 left-0 bottom-0 flex flex-col gap-3 p-2 z-40',
-          'bg-background/80 border-r transition-transform duration-300',
-          isOpen ? 'translate-x-0' : '-translate-x-full',
-          'md:translate-x-0 md:bg-transparent md:border-r-0',
-        )}
-      >
-        {/* 모바일: X 닫기 버튼 */}
-        <Button
-          variant="nav"
-          size="icon-lg"
-          rounded="lg"
-          onClick={onClose}
-          className="shadow-sm md:hidden"
-        >
-          <X className="size-5" />
-        </Button>
-        {/* 데스크탑: Menu 아이콘 */}
-        <Button variant="nav" size="icon-lg" rounded="lg" className="shadow-sm hidden md:flex">
-          <Menu className="size-5" />
-        </Button>
+  const avatarFallback = user?.name ? user.name.charAt(0) : '?';
 
-        <div className="w-full h-1 bg-mega-gray-light rounded-md" />
+  const SidebarContent = () => (
+    <div className="flex flex-col h-full">
+      {/* Logo */}
+      <div className="flex items-center h-16 px-4 shrink-0">
+        <Link to={ROUTES.ROOT} onClick={onClose} className="flex items-center gap-2">
+          <img src={logo} alt="MegaHub" className="h-7" />
+        </Link>
+      </div>
 
+      {/* Divider */}
+      <div className="mx-3 h-px bg-white/10" />
+
+      {/* Nav items */}
+      <nav className="flex-1 px-3 py-4 flex flex-col gap-1 overflow-y-auto scrollbar-hide">
         {filteredNavItems.map((item) => (
           <NavItem
             key={item.key}
             icon={item.icon}
+            label={item.label}
             active={isActive(item)}
             onClick={() => handleNavClick(item.path)}
           />
         ))}
       </nav>
+
+      {/* User section */}
+      <div className="mx-3 h-px bg-white/10" />
+      <div className="p-3 shrink-0">
+        <div className="flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-white/8 transition-colors">
+          <Avatar className="size-8 shrink-0">
+            <AvatarFallback className="bg-white/20 text-white text-sm font-semibold">
+              {avatarFallback}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-white truncate">{user?.name ?? '-'}</p>
+            <p className="text-xs text-white/50 truncate">{user?.position ?? ''}</p>
+          </div>
+          <div className="flex gap-0.5">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-7 rounded-lg text-white/50 hover:text-white hover:bg-white/10"
+              onClick={() => setLogoutDialogOpen(true)}
+            >
+              <LogOut className="size-4" />
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <>
+      {/* Desktop sidebar - always visible */}
+      <aside className="hidden lg:flex fixed inset-y-0 left-0 w-[240px] bg-[#1a0f3c] flex-col z-40 shadow-xl">
+        <SidebarContent />
+      </aside>
+
+      {/* Mobile overlay */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden backdrop-blur-sm"
+          onClick={onClose}
+        />
+      )}
+
+      {/* Mobile drawer */}
+      <aside
+        className={cn(
+          'fixed inset-y-0 left-0 w-[240px] bg-[#1a0f3c] flex flex-col z-50 lg:hidden',
+          'transition-transform duration-300 ease-in-out shadow-2xl',
+          isOpen ? 'translate-x-0' : '-translate-x-full',
+        )}
+      >
+        <SidebarContent />
+      </aside>
+
+      {/* Logout dialog */}
+      <Dialog open={logoutDialogOpen} onOpenChange={setLogoutDialogOpen}>
+        <DialogContent showCloseButton={false} className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <LogOut size={18} className="text-destructive" />
+              로그아웃
+            </DialogTitle>
+            <DialogDescription>로그아웃 하시겠습니까? 현재 세션이 종료됩니다.</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setLogoutDialogOpen(false)}>취소</Button>
+            <Button variant="destructive" onClick={handleLogout}>로그아웃</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };

@@ -25,31 +25,21 @@ const LoginForm = () => {
         if (isApiError(error)) {
           switch (error.status) {
             case 401:
-              form.setError('username', {
-                message: '아이디 또는 비밀번호가 올바르지 않습니다.',
-              });
-              form.setError('password', {
-                message: '아이디 또는 비밀번호가 올바르지 않습니다.',
-              });
+              form.setError('username', { message: '아이디 또는 비밀번호가 올바르지 않습니다.' });
+              form.setError('password', { message: '아이디 또는 비밀번호가 올바르지 않습니다.' });
               return;
-
             case 403:
-              // 서버 메시지 그대로 표시 (pending/rejected/suspended)
               toast.error(error.message);
               return;
-
             case 429:
               toast.error(error.message);
               return;
-
             case 422:
               toast.error(error.message);
               return;
-
             case 500:
               toast.error('서버 오류가 발생했습니다.');
               return;
-
             default:
               toast.error(error.message ?? '알 수 없는 오류가 발생했습니다.');
               return;
@@ -65,18 +55,36 @@ const LoginForm = () => {
       <form
         id="login-form"
         onSubmit={(e) => void form.handleSubmit(onSubmit)(e)}
-        className="flex flex-col gap-4"
+        className="flex flex-col gap-3"
       >
-        <RHFInput form={form} name="username" placeholder="ID" />
+        <RHFInput
+          form={form}
+          name="username"
+          label="아이디"
+          placeholder="아이디를 입력하세요"
+          className="h-11 bg-gray-50 border-gray-200 focus:bg-white transition-colors"
+        />
         <RHFInput
           type="password"
           form={form}
           name="password"
-          placeholder="Password"
-          className="font-sans"
+          label="비밀번호"
+          placeholder="비밀번호를 입력하세요"
+          className="h-11 bg-gray-50 border-gray-200 focus:bg-white transition-colors"
         />
-        <Button type="submit" className="mt-2 w-full bg-mega">
-          {isPending ? '로그인중...' : '로그인'}
+        <Button
+          type="submit"
+          className="mt-2 h-11 w-full bg-[#351f66] hover:bg-[#5b31a5] text-white font-medium rounded-xl transition-all duration-200 active:scale-[0.98]"
+          disabled={isPending}
+        >
+          {isPending ? (
+            <span className="flex items-center gap-2">
+              <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+              로그인 중...
+            </span>
+          ) : (
+            '로그인'
+          )}
         </Button>
       </form>
     </Form>
