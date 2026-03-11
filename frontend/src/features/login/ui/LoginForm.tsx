@@ -14,10 +14,7 @@ import { Form } from '@/shared/components/ui/form';
 const LoginForm = () => {
   const form = useForm<LoginSchemaType>({
     resolver: zodResolver(loginSchema),
-    defaultValues: {
-      username: '',
-      password: '',
-    },
+    defaultValues: { username: '', password: '' },
   });
 
   const { mutate: login, isPending } = useLoginMutation();
@@ -37,7 +34,12 @@ const LoginForm = () => {
               return;
 
             case 403:
-              toast.error('접근 권한이 없습니다.');
+              // 서버 메시지 그대로 표시 (pending/rejected/suspended)
+              toast.error(error.message);
+              return;
+
+            case 429:
+              toast.error(error.message);
               return;
 
             case 422:
@@ -53,7 +55,6 @@ const LoginForm = () => {
               return;
           }
         }
-
         toast.error('네트워크 오류가 발생했습니다.');
       },
     });
@@ -66,9 +67,7 @@ const LoginForm = () => {
         onSubmit={(e) => void form.handleSubmit(onSubmit)(e)}
         className="flex flex-col gap-4"
       >
-        {/* TODOS : RHFInput shared 레이어로 변경 */}
         <RHFInput form={form} name="username" placeholder="ID" />
-
         <RHFInput
           type="password"
           form={form}
@@ -76,9 +75,8 @@ const LoginForm = () => {
           placeholder="Password"
           className="font-sans"
         />
-
         <Button type="submit" className="mt-2 w-full bg-mega">
-          {isPending ? '로그인중' : '로그인'}
+          {isPending ? '로그인중...' : '로그인'}
         </Button>
       </form>
     </Form>

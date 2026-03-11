@@ -6,15 +6,15 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.core.config import now_kst
 from app.modules.admin import schemas
 from app.modules.admin.models import Holiday, InsuranceRate
 from app.modules.admin.schemas import InsuranceRateCreate, InsuranceRateUpdate
-from app.core.config import now_kst
 from app.modules.auth.models import StatusEnum, User
 from app.modules.auth.services import decrypt_ssn, encrypt_ssn, hash_password
 
 
-# --------- Users ----------
+# ── User (직원 관리) ──────────────────────────────────────────────────────
 def create_user(db: Session, data: schemas.UserCreate) -> User:
     user = User(
         username=data.username,
@@ -35,15 +35,12 @@ def create_user(db: Session, data: schemas.UserCreate) -> User:
         is_active=data.is_active,
         status=StatusEnum.approved,  # 관리자가 직접 생성 → 즉시 승인
     )
-
     db.add(user)
-
     try:
         db.flush()
     except IntegrityError:
         db.rollback()
         raise ValueError("이미 사용 중인 username 입니다.")
-
     return user
 
 
@@ -51,11 +48,8 @@ def get_user_detail(db: Session, memberId: int) -> User:
     user = db.get(User, memberId)
     if not user:
         raise LookupError("사용자를 찾을 수 없습니다.")
-
-    # 관리자만 복호화
     if user.ssn:
         user.ssn = decrypt_ssn(user.ssn)
-
     return user
 
 
@@ -70,12 +64,8 @@ def list_users(
             | (User.username.ilike(like))
             | (User.email.ilike(like))
         )
-
-    # total
     count_stmt = select(func.count()).select_from(stmt.subquery())
     total = db.execute(count_stmt).scalar_one()
-
-    # items
     items = (
         db.execute(stmt.order_by(User.id.desc()).limit(limit).offset(offset))
         .scalars()
@@ -88,15 +78,11 @@ def update_user(db: Session, user_id: int, data: schemas.UserUpdate) -> User:
     user = db.get(User, user_id)
     if not user:
         raise LookupError("해당 사용자가 존재하지 않습니다.")
-
     payload = data.model_dump(exclude_unset=True)
-    # 비밀번호 변경을 허용한다면 해시 처리
     if "password" in payload and payload["password"]:
         payload["password"] = hash_password(payload["password"])
-
     for k, v in payload.items():
         setattr(user, k, v)
-
     try:
         db.flush()
     except IntegrityError:
@@ -105,6 +91,14 @@ def update_user(db: Session, user_id: int, data: schemas.UserUpdate) -> User:
     return user
 
 
+def delete_user(db: Session, user_id: int) -> None:
+    user = db.get(User, user_id)
+    if not user:
+        raise LookupError("해당 사용자가 존재하지 않습니다.")
+    db.delete(user)
+
+
+# ── 가입 승인 관리 ────────────────────────────────────────────────────────
 def list_pending_users(
     db: Session, limit: int, offset: int
 ) -> Tuple[int, List[User]]:
@@ -125,39 +119,60 @@ def approve_user(db: Session, user_id: int, admin_id: int) -> User:
         raise LookupError("사용자를 찾을 수 없습니다.")
     if user.status != StatusEnum.pending:
         raise ValueError("승인 대기 중인 사용자가 아닙니다.")
-
-    user.status = StatusEnum.approved
+    user.status      = StatusEnum.approved
     user.approved_by = admin_id
     user.approved_at = now_kst()
     db.flush()
     return user
 
 
-def reject_user(db: Session, user_id: int, admin_id: int) -> User:
+def reject_user(db: Session, user_id: int, admin_id: int, reason: Optional[str] = None) -> User:
     user = db.get(User, user_id)
     if not user:
         raise LookupError("사용자를 찾을 수 없습니다.")
     if user.status != StatusEnum.pending:
         raise ValueError("승인 대기 중인 사용자가 아닙니다.")
-
-    user.status = StatusEnum.rejected
-    user.approved_by = admin_id
-    user.approved_at = now_kst()
+    user.status           = StatusEnum.rejected
+    user.approved_by      = admin_id
+    user.approved_at      = now_kst()
+    user.rejection_reason = reason
     db.flush()
     return user
 
 
-def delete_user(db: Session, user_id: int) -> None:
+def suspend_user(db: Session, user_id: int, admin_id: int, reason: Optional[str] = None) -> User:
     user = db.get(User, user_id)
     if not user:
-        raise LookupError("해당 사용자가 존재하지 않습니다.")
-    db.delete(user)
-    # flush/commit은 라우터에서
+        raise LookupError("사용자를 찾을 수 없습니다.")
+    if user.status == StatusEnum.suspended:
+        raise ValueError("이미 정지된 계정입니다.")
+    if user.status != StatusEnum.approved:
+        raise ValueError("활성 계정만 정지할 수 있습니다.")
+    user.status        = StatusEnum.suspended
+    user.suspended_by  = admin_id
+    user.suspended_at  = now_kst()
+    user.suspend_reason = reason
+    db.flush()
+    return user
 
 
-# --------- Holidays (전사 공휴일) ----------
+def unsuspend_user(db: Session, user_id: int, admin_id: int) -> User:
+    user = db.get(User, user_id)
+    if not user:
+        raise LookupError("사용자를 찾을 수 없습니다.")
+    if user.status != StatusEnum.suspended:
+        raise ValueError("정지된 계정이 아닙니다.")
+    user.status         = StatusEnum.approved
+    user.suspended_by   = None
+    user.suspended_at   = None
+    user.suspend_reason = None
+    db.flush()
+    return user
+
+
+# ── 공휴일 ────────────────────────────────────────────────────────────────
 def create_holiday(db: Session, data: schemas.HolidayCreate) -> Holiday:
-    h = Holiday(name=data.name, date=data.date, description=data.description)
+    h = Holiday(label=data.label, date=data.date)
     db.add(h)
     db.flush()
     return h
@@ -174,9 +189,7 @@ def list_holidays(
     return db.execute(stmt.order_by(Holiday.date.desc())).scalars().all()
 
 
-def update_holiday(
-    db: Session, holiday_id: int, data: schemas.HolidayUpdate
-) -> Holiday:
+def update_holiday(db: Session, holiday_id: int, data: schemas.HolidayUpdate) -> Holiday:
     h = db.get(Holiday, holiday_id)
     if not h:
         raise LookupError("해당 공휴일이 존재하지 않습니다.")
@@ -196,23 +209,18 @@ def delete_holiday(db: Session, holiday_id: int) -> None:
     db.delete(h)
 
 
+# ── 4대보험 요율 ──────────────────────────────────────────────────────────
 def get_insurance_rates(db: Session) -> list[InsuranceRate]:
     stmt = select(InsuranceRate).order_by(InsuranceRate.year.desc())
     return db.execute(stmt).scalars().all()
 
 
-def get_insurance_rate_by_year(
-    db: Session,
-    year: int,
-) -> InsuranceRate | None:
+def get_insurance_rate_by_year(db: Session, year: int) -> InsuranceRate | None:
     stmt = select(InsuranceRate).where(InsuranceRate.year == year)
     return db.execute(stmt).scalars().first()
 
 
-def create_insurance_rate(
-    db: Session,
-    payload: InsuranceRateCreate,
-) -> InsuranceRate:
+def create_insurance_rate(db: Session, payload: InsuranceRateCreate) -> InsuranceRate:
     rate = InsuranceRate(
         year=payload.year,
         national_pension_rate=payload.national_pension_rate,
@@ -227,36 +235,27 @@ def create_insurance_rate(
 
 
 def update_insurance_rate_full(
-    db: Session,
-    rate: InsuranceRate,
-    payload: InsuranceRateCreate,
+    db: Session, rate: InsuranceRate, payload: InsuranceRateCreate
 ) -> InsuranceRate:
-    rate.national_pension_rate = payload.national_pension_rate
-    rate.health_insurance_rate = payload.health_insurance_rate
-    rate.long_term_care_rate = payload.long_term_care_rate
+    rate.national_pension_rate    = payload.national_pension_rate
+    rate.health_insurance_rate    = payload.health_insurance_rate
+    rate.long_term_care_rate      = payload.long_term_care_rate
     rate.employment_insurance_rate = payload.employment_insurance_rate
-
     db.commit()
     db.refresh(rate)
     return rate
 
 
 def update_insurance_rate_partial(
-    db: Session,
-    rate: InsuranceRate,
-    payload: InsuranceRateUpdate,
+    db: Session, rate: InsuranceRate, payload: InsuranceRateUpdate
 ) -> InsuranceRate:
-    for field, value in payload.dict(exclude_unset=True).items():
+    for field, value in payload.model_dump(exclude_unset=True).items():
         setattr(rate, field, value)
-
     db.commit()
     db.refresh(rate)
-    return
+    return rate
 
 
-def delete_insurance_rate(
-    db: Session,
-    rate: InsuranceRate,
-) -> None:
+def delete_insurance_rate(db: Session, rate: InsuranceRate) -> None:
     db.delete(rate)
     db.commit()

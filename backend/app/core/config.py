@@ -45,33 +45,44 @@ class Settings(BaseSettings):
     APP_NAME: str = "Megabox"
     TIMEZONE: str = "Asia/Seoul"
 
-    # Database configs
+    # Database
     DB_USER: str
     DB_PASSWORD: str
     DB_HOST: str
     DB_PORT: int
     DB_NAME: str
 
-    # JWT configs
+    # JWT (legacy keys — 하위 호환용)
     JWT_SECRET_KEY: str
     JWT_ALGORITHM: str
-    JWT_EXPIRE_MINUTES: int
-    JWT_EXPIRE_DAYS: int
+    JWT_EXPIRE_MINUTES: int = 720   # 실제 사용은 ACCESS_TOKEN_EXPIRE_MINUTES
+    JWT_EXPIRE_DAYS: int = 7        # 실제 사용은 REFRESH_TOKEN_EXPIRE_DAYS
 
-    # Admin configs
+    # 토큰 수명 (canonical)
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+
+    # Admin
     ADMIN_USERNAME: str
     ADMIN_PASSWORD: str
     ADMIN_NAME: str
     ADMIN_EMAIL: str
 
-    # Holiday config
+    # Holiday API
     HOLIDAY_API_KEY: str
 
-    # Ssn
+    # SSN encryption
     SSN_SECRET_KEY: str
 
-    # Cors
+    # CORS
     CORS_ORIGINS: List[str] = []
+
+    # Redis
+    REDIS_URL: str = "redis://megabox-redis:6379/0"
+
+    # 로그인 보호
+    MAX_LOGIN_ATTEMPTS: int = 5
+    LOGIN_LOCKOUT_MINUTES: int = 15
 
     @property
     def DATABASE_URL(self) -> str:
@@ -79,6 +90,10 @@ class Settings(BaseSettings):
             f"mysql+pymysql://{self.DB_USER}:{self.DB_PASSWORD}"
             f"@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
         )
+
+    @property
+    def IS_PRODUCTION(self) -> bool:
+        return self.MODE == "prod"
 
     class Config:
         env_file = f"envs/.env.{os.getenv('MODE', 'dev')}"
@@ -92,11 +107,9 @@ class Settings(BaseSettings):
             v = v.strip()
             if not v:
                 return []
-            # JSON 배열 형식 처리: ["a","b"]
             if v.startswith("["):
                 import json
                 return json.loads(v)
-            # 쉼표 구분 형식 처리: a,b,c
             return [i.strip() for i in v.split(",") if i.strip()]
         return v
 
