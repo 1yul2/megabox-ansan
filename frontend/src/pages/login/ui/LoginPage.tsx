@@ -1,5 +1,5 @@
 import { FormCard } from '@/features/login';
-import Logo from '@/shared/assets/logo/LogowithText_white.png';
+import Logo from '@/shared/assets/logo/Logo_white.png';
 import LogoPurple from '@/shared/assets/logo/Megabox_Logo_Indigo.png';
 import BackgroundImage from '@/shared/assets/img/main_bg.png';
 import { Calendar, Clock, Users } from 'lucide-react';
