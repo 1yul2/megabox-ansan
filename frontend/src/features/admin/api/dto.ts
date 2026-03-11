@@ -30,12 +30,17 @@ export interface AdminUserDTO {
   hire_date?: string;
   retire_date?: string;
   is_active: boolean;
+  status: string;
   wage?: number;
   unavailable_days?: number[];
   health_cert_expire?: string;
 }
 
-export type AdminUserDetailDTO = AdminUserDTO;
+export type AdminUserDetailDTO = AdminUserDTO & {
+  login_failed_count?: number;
+  last_login_at?: string;
+  last_login_failed_at?: string;
+};
 
 export interface AdminUsersResponseDTO {
   items: AdminUserDTO[];
@@ -79,6 +84,33 @@ export interface UpdateAdminUserRequestDTO {
   wage?: number;
   unavailable_days?: number[];
   health_cert_expire?: string;
+}
+
+// 가입 승인 대기
+export interface PendingUserDTO {
+  id: number;
+  username: string;
+  name: string;
+  gender?: string;
+  birth_date?: string;
+  phone?: string;
+  email?: string;
+  hire_date?: string;
+  health_cert_expire?: string;
+  unavailable_days?: number[];
+}
+
+export interface PendingUsersResponseDTO {
+  total: number;
+  items: PendingUserDTO[];
+}
+
+export interface RejectUserRequestDTO {
+  reason?: string;
+}
+
+export interface SuspendUserRequestDTO {
+  reason?: string;
 }
 
 // 4대보험 요율
