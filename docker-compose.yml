@@ -1,28 +1,5 @@
 services:
   # ============================================================
-  # MySQL
-  # ============================================================
-  db:
-    image: mysql:8.0
-    container_name: megabox-db
-    restart: unless-stopped
-    environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: megabox
-      TZ: Asia/Seoul
-    ports:
-      - "3307:3306"
-    volumes:
-      - db_data:/var/lib/mysql
-    healthcheck:
-      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - megabox-net
-
-  # ============================================================
   # Redis
   # ============================================================
   redis:
@@ -62,8 +39,6 @@ services:
     ports:
       - "8000:8000"
     depends_on:
-      db:
-        condition: service_healthy
       redis:
         condition: service_healthy
     networks:
@@ -111,8 +86,6 @@ services:
 # Volumes
 # ============================================================
 volumes:
-  db_data:
-    driver: local
   redis_data:
     driver: local
 
