@@ -156,6 +156,27 @@ src/
 
 `<AuthRoute isPublic={} allowSystem={} requireAdmin={}>` 컴포넌트로 제어.
 
+**레이아웃 구조** (`Layout.tsx`):
+- 데스크탑: `bg-[#1a0f3c]` 다크 사이드바 240px 고정 (`fixed`) + `lg:pl-[240px]` 콘텐츠 오프셋
+- 모바일: sticky top 헤더 (`MobileHeader`) + slide-in drawer (`SideNav`)
+- `SystemLayOut`은 `/work-status` 전용 — `<Outlet />` 만 렌더링 (WorkStatusPanel이 자체 full-screen 처리)
+
+### 키오스크 근태 API (`/api/workstatus/`)
+
+| 메서드 | 경로 | 설명 |
+|---|---|---|
+| GET | `/employees` | approved + crew/leader/cleaner 직원 목록 |
+| GET | `/today/{user_id}` | 오늘 근태 기록 (없으면 null 반환) |
+| POST | `/kiosk/check-in` | `{ user_id }` 출근 |
+| POST | `/kiosk/break-start` | `{ user_id }` 휴식 시작 |
+| POST | `/kiosk/break-end` | `{ user_id }` 복귀 |
+| POST | `/kiosk/check-out` | `{ user_id }` 퇴근 (payroll 누적) |
+
+모든 키오스크 엔드포인트는 **system 계정 JWT 필수** (`require_system_user` 의존성).
+기존 `/check-in`, `/break-start`, `/break-end`, `/check-out`은 `{ username, password }` 레거시 방식 유지.
+
+**백엔드 응답 형식**: 시간 필드(`check_in` 등)는 `HH:MM:SS` 문자열 (ISO datetime 아님). 프론트에서 `timeString.slice(0, 5)`로 `HH:MM` 파싱.
+
 ### 상태 관리
 
 - **서버 상태**: TanStack React Query (캐싱, 재조회)

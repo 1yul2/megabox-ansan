@@ -1,12 +1,17 @@
 import { LogOut } from 'lucide-react';
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
+import { Link } from 'react-router';
+
 import { NAV_ITEMS, type NavItemConfig } from '../model/nav.config';
+
 import NavItem from './NavItem';
+
 import { useUserQuery } from '@/entities/user/api/queries';
 import { useLogoutMutation } from '@/features/login/api/queries';
-import logo from '@/shared/assets/logo/LogowithText_white.png';
+import logo from '@/shared/assets/logo/Logo_white.png';
 import { Avatar, AvatarFallback } from '@/shared/components/ui/avatar';
+import { Button } from '@/shared/components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -15,10 +20,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/shared/components/ui/dialog';
-import { Button } from '@/shared/components/ui/button';
-import { cn } from '@/shared/lib/utils';
 import { ROUTES } from '@/shared/constants/routes';
-import { Link } from 'react-router';
+import { cn } from '@/shared/lib/utils';
 
 interface SideNavProps {
   isOpen?: boolean;
@@ -145,8 +148,12 @@ const SideNav = ({ isOpen = false, onClose }: SideNavProps) => {
             <DialogDescription>로그아웃 하시겠습니까? 현재 세션이 종료됩니다.</DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setLogoutDialogOpen(false)}>취소</Button>
-            <Button variant="destructive" onClick={handleLogout}>로그아웃</Button>
+            <Button variant="outline" onClick={() => setLogoutDialogOpen(false)}>
+              취소
+            </Button>
+            <Button variant="destructive" onClick={handleLogout}>
+              로그아웃
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

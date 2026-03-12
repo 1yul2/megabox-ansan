@@ -1,5 +1,6 @@
 import { Bell, Menu } from 'lucide-react';
 import { Link } from 'react-router';
+
 import { useUserQuery } from '@/entities/user/api/queries';
 import logo from '@/shared/assets/logo/Megabox_Logo_Indigo.png';
 import { Avatar, AvatarFallback } from '@/shared/components/ui/avatar';

@@ -182,7 +182,7 @@ async def login(
             position=user.position,
             is_active=user.is_active,
             is_system=user.position == PositionEnum.system,
-            is_admin=user.position in {PositionEnum.manager, PositionEnum.system},
+            is_admin=user.position in {PositionEnum.admin, PositionEnum.system},
             status=user.status,
         ),
     )
@@ -304,7 +304,7 @@ async def me(current_user: User = Depends(get_current_user)):
         position=current_user.position,
         is_active=current_user.is_active,
         is_system=current_user.position == PositionEnum.system,
-        is_admin=current_user.position in {PositionEnum.manager, PositionEnum.system},
+        is_admin=current_user.position in {PositionEnum.admin, PositionEnum.system},
         status=current_user.status,
     )
 

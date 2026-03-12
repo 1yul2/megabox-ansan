@@ -16,7 +16,7 @@ interface AuthRouteProps extends PropsWithChildren {
 
 export const AuthRoute = ({ isPublic, requireAdmin, allowSystem, children }: AuthRouteProps) => {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  const accessToken     = useAuthStore((s) => s.accessToken);
+  const accessToken = useAuthStore((s) => s.accessToken);
   const { data: user, isLoading } = useUserQuery();
 
   // 토큰은 있으나 user 아직 로딩 중

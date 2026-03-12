@@ -1,4 +1,5 @@
 from datetime import date
+from decimal import Decimal
 from typing import Optional
 
 from pydantic import BaseModel, field_serializer
@@ -6,62 +7,59 @@ from pydantic import BaseModel, field_serializer
 
 class PayrollResponse(BaseModel):
     """
-    급여 리포트 / 명세서 통합
-    - 전체 조회 (년, 월 필터)
-    - 단일/다건 조회 공용
+    관리자용 급여 응답 — 전직원 급여 조회 / 수정 결과
     """
 
-    # 기본 / 인적 정보
-    name: Optional[str] = None  # 이름
-    position: Optional[str] = None  # 직급
-    wage: Optional[int] = None  # 시급
-    rrn: Optional[str] = None  # 주민등록번호
-    join_date: Optional[date] = None  # 입사일
-    resign_date: Optional[date] = None  # 퇴사예정일
-    last_work_day: Optional[date] = None  # 마지막 근로일
+    payroll_id: Optional[int] = None
+    user_id: Optional[int] = None
 
-    bank_name: Optional[str] = None  # 은행
-    bank_account: Optional[str] = None  # 계좌번호
-    email: Optional[str] = None  # 이메일
+    # ── 인적 정보 ────────────────────────────────────────
+    name: Optional[str] = None
+    position: Optional[str] = None
+    wage: Optional[int] = None
+    rrn: Optional[str] = None          # 주민등록번호 (관리자 페이지: 마스킹 없음)
+    join_date: Optional[date] = None
+    resign_date: Optional[date] = None
+    last_work_day: Optional[date] = None
+    bank_name: Optional[str] = None
+    bank_account: Optional[str] = None
+    email: Optional[str] = None
 
-    # 근무 요약
-    total_work_days: Optional[int] = None  # 근무일수
-    total_work_hours: Optional[float] = None  # 총 근무시간
-    avg_daily_hours: Optional[float] = None  # 일 평균시간
+    # ── 근무 요약 ────────────────────────────────────────
+    total_work_days: Optional[int] = None
+    total_work_hours: Optional[float] = None
+    avg_daily_hours: Optional[float] = None
 
-    # 근무 시간
-    day_hours: Optional[float] = None  # 주간 근무시간
-    night_hours: Optional[float] = None  # 야간 근무시간
+    # ── 시간 항목 ────────────────────────────────────────
+    day_hours: Optional[float] = None               # 주간 근무시간
+    night_hours: Optional[float] = None             # 야간 근무시간
     weekly_allowance_hours: Optional[float] = None  # 주휴시간
-    annual_leave_hours: Optional[float] = None  # 연차시간
-    holiday_hours: Optional[float] = None  # 공휴일 근무시간
+    annual_leave_hours: Optional[float] = None      # 연차시간
+    holiday_hours: Optional[float] = None           # 공휴일 근무시간
+    labor_day_hours: Optional[float] = None         # 근로자의날 근무시간
 
-    # 급여
-    day_wage: Optional[int] = None  # 주간급여
-    night_wage: Optional[int] = None  # 야간급여
-    weekly_allowance_pay: Optional[int] = None  # 주휴수당
-    annual_leave_pay: Optional[int] = None  # 연차수당
-    holiday_pay: Optional[int] = None  # 공휴일 근무수당
+    # ── 급여 항목 ────────────────────────────────────────
+    day_wage: Optional[int] = None
+    night_wage: Optional[int] = None
+    weekly_allowance_pay: Optional[int] = None
+    annual_leave_pay: Optional[int] = None
+    holiday_pay: Optional[int] = None
+    labor_day_pay: Optional[int] = None
+    gross_pay: Optional[int] = None                 # 급여총액
 
-    gross_pay: Optional[int] = None  # 급여총액
+    # ── 공제 항목 ────────────────────────────────────────
+    insurance_health: Optional[int] = None
+    insurance_care: Optional[int] = None
+    insurance_employment: Optional[int] = None
+    insurance_pension: Optional[int] = None
 
-    # 공제
-    insurance_health: Optional[int] = None  # 건강보험
-    insurance_care: Optional[int] = None  # 요양보험
-    insurance_employment: Optional[int] = None  # 고용보험
-    insurance_pension: Optional[int] = None  # 국민연금
-
-    total_deduction: Optional[int] = None  # 공제계
-    net_pay: Optional[int] = None  # 지급액
+    total_deduction: Optional[int] = None           # 공제계
+    net_pay: Optional[int] = None                   # 실수령액
 
     @field_serializer(
-        "total_work_hours",
-        "avg_daily_hours",
-        "day_hours",
-        "night_hours",
-        "weekly_allowance_hours",
-        "annual_leave_hours",
-        "holiday_hours",
+        "total_work_hours", "avg_daily_hours",
+        "day_hours", "night_hours", "weekly_allowance_hours",
+        "annual_leave_hours", "holiday_hours", "labor_day_hours",
         when_used="json",
     )
     def round_two_decimal(self, value):
@@ -70,52 +68,67 @@ class PayrollResponse(BaseModel):
         return round(value, 2)
 
 
-class WeeklyAllowanceResponse(BaseModel):
-    user_id: int
-    iso_year: int
-    iso_week: int
-
-    week_start_date: date
-    week_end_date: date
-
-    allowance_hours: float
-
-    model_config = {"from_attributes": True}
-
-
 class PayrollPayResponse(BaseModel):
     """
-    단일 사용자 급여 금액 요약 Response
-    - 본인급여 조회
-    - 근무시간 상세 없음
+    직원 본인 급여 명세서 응답
     """
 
-    # 기본 식별 정보
-    name: Optional[str] = None  # 이름
-    position: Optional[str] = None  # 직급
-    birth_date: Optional[date] = None  # 생년월일
-    pay_date: Optional[date] = None  # 지급일
+    name: Optional[str] = None
+    position: Optional[str] = None
+    birth_date: Optional[date] = None
+    pay_date: Optional[date] = None
+    wage: Optional[int] = None
 
-    # 급여 항목
-    day_wage: Optional[int] = None  # 주간급여
-    night_wage: Optional[int] = None  # 야간근무수당
-    weekly_allowance_pay: Optional[int] = None  # 주휴수당
-    annual_leave_pay: Optional[int] = None  # 연차수당
-    holiday_pay: Optional[int] = None  # 법정공휴일수당
-    # extra_pay: Optional[int] = None  # 기타수당
+    # ── 근무 요약 ────────────────────────────────────────
+    total_work_days: Optional[int] = None
+    total_work_hours: Optional[float] = None
+    avg_daily_hours: Optional[float] = None
 
-    gross_pay: Optional[int] = None  # 급여총액
+    # ── 시간 항목 ────────────────────────────────────────
+    day_hours: Optional[float] = None
+    night_hours: Optional[float] = None
+    weekly_allowance_hours: Optional[float] = None
+    annual_leave_hours: Optional[float] = None
+    holiday_hours: Optional[float] = None
+    labor_day_hours: Optional[float] = None
 
-    # 공제
-    insurance_health: Optional[int] = None  # 건강보험
-    insurance_care: Optional[int] = None  # 장기요양보험
-    insurance_employment: Optional[int] = None  # 고용보험
-    insurance_pension: Optional[int] = None  # 국민연금
+    # ── 급여 항목 ────────────────────────────────────────
+    day_wage: Optional[int] = None
+    night_wage: Optional[int] = None
+    weekly_allowance_pay: Optional[int] = None
+    annual_leave_pay: Optional[int] = None
+    holiday_pay: Optional[int] = None
+    labor_day_pay: Optional[int] = None
+    gross_pay: Optional[int] = None
 
-    total_deduction: Optional[int] = None  # 공제총액
+    # ── 공제 ────────────────────────────────────────────
+    insurance_health: Optional[int] = None
+    insurance_care: Optional[int] = None
+    insurance_employment: Optional[int] = None
+    insurance_pension: Optional[int] = None
 
-    # 실지급액
-    net_pay: Optional[int] = None  # 실지급액
+    total_deduction: Optional[int] = None
+    net_pay: Optional[int] = None
+
+
+class PayrollAdminUpdateInput(BaseModel):
+    """
+    관리자 급여 수정 입력
+    - gross_pay, total_deduction, net_pay 는 계산값이므로 수정 불가
+    - 나머지 항목 수정 시 자동 재계산
+    """
+    wage: Optional[int] = None
+    day_hours: Optional[float] = None
+    night_hours: Optional[float] = None
+    weekly_allowance_hours: Optional[float] = None
+    annual_leave_hours: Optional[float] = None
+    holiday_hours: Optional[float] = None
+    labor_day_hours: Optional[float] = None
+    insurance_health: Optional[int] = None
+    insurance_care: Optional[int] = None
+    insurance_employment: Optional[int] = None
+    insurance_pension: Optional[int] = None
+    last_work_day: Optional[date] = None
 
 
 class PayrollPayDateCreate(BaseModel):

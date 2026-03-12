@@ -18,6 +18,7 @@ import {
   getPendingUsers,
   rejectUser,
   suspendUser,
+  syncHolidays,
   unsuspendUser,
   updateAdminUser,
   updateHoliday,
@@ -50,9 +51,8 @@ export function useCreateHolidayMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (data: CreateHolidayRequestDTO) => createHoliday(data),
-    onSuccess: (_, variables) => {
-      const year = new Date(variables.date).getFullYear();
-      void queryClient.invalidateQueries({ queryKey: ADMIN_QUERY_KEYS.holidays(year) });
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ADMIN_QUERY_KEYS.holidaysBase() });
     },
   });
 }
@@ -72,6 +72,16 @@ export function useDeleteHolidayMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: number) => deleteHoliday(id),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ADMIN_QUERY_KEYS.holidaysBase() });
+    },
+  });
+}
+
+export function useSyncHolidaysMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (year: number) => syncHolidays(year),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ADMIN_QUERY_KEYS.holidaysBase() });
     },

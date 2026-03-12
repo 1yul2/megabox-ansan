@@ -27,7 +27,10 @@ export const registerStep1Schema = z
       .regex(/^[a-zA-Z0-9_]+$/, '아이디는 영문, 숫자, _만 사용 가능합니다.'),
     password: passwordSchema,
     passwordConfirm: z.string(),
-    name: z.string().min(2, '이름은 2자 이상이어야 합니다.').max(20, '이름은 20자 이하여야 합니다.'),
+    name: z
+      .string()
+      .min(2, '이름은 2자 이상이어야 합니다.')
+      .max(20, '이름은 20자 이하여야 합니다.'),
     gender: z.enum(['남', '여'], { message: '성별을 선택해주세요.' }),
     birth_date: z.string().min(1, '생년월일을 입력해주세요.'),
   })
@@ -39,9 +42,7 @@ export const registerStep1Schema = z
 export type RegisterStep1Type = z.infer<typeof registerStep1Schema>;
 
 export const registerStep2Schema = z.object({
-  ssn: z
-    .string()
-    .regex(/^\d{6}-\d{7}$/, '주민등록번호 형식이 올바르지 않습니다. (XXXXXX-XXXXXXX)'),
+  ssn: z.string().regex(/^\d{6}-\d{7}$/, '주민등록번호 형식이 올바르지 않습니다. (XXXXXX-XXXXXXX)'),
   phone: z
     .string()
     .min(10, '연락처를 입력해주세요.')
@@ -52,11 +53,11 @@ export const registerStep2Schema = z.object({
 export type RegisterStep2Type = z.infer<typeof registerStep2Schema>;
 
 export const registerStep3Schema = z.object({
-  bank_name:          z.string().optional(),
-  account_number:     z.string().optional(),
-  hire_date:          z.string().optional(),
+  bank_name: z.string().optional(),
+  account_number: z.string().optional(),
+  hire_date: z.string().optional(),
   health_cert_expire: z.string().optional(),
-  unavailable_days:   z.array(z.number()).optional(),
+  unavailable_days: z.array(z.number()).optional(),
 });
 
 export type RegisterStep3Type = z.infer<typeof registerStep3Schema>;

@@ -17,6 +17,8 @@ from app.modules.auth.models import (
     User,
 )
 from app.modules.auth.services import hash_password
+from app.modules.workstatus.models import AttendanceEvent  # noqa: F401 — create_all 인식
+from app.modules.payroll.models import Payroll, PayrollPayDate  # noqa: F401
 
 configure_mappers()
 
@@ -35,11 +37,56 @@ app.add_middleware(
 )
 
 
+def _run_schema_migrations() -> None:
+    """
+    SQLAlchemy create_all은 새 테이블만 생성하고 기존 테이블 ALTER는 수행 안 함.
+    DB에 실데이터가 없으므로 직접 DDL로 스키마 변경 처리.
+    """
+    from sqlalchemy import text
+
+    ddl_statements = [
+        # 기존 workstatus 테이블 제거 (attendance_events로 대체)
+        "DROP TABLE IF EXISTS workstatus",
+
+        # users 테이블: wage 컬럼 추가
+        """ALTER TABLE users
+           ADD COLUMN IF NOT EXISTS wage INT NOT NULL DEFAULT 0
+           COMMENT '개인 시급 (0이면 최저시급 적용)'""",
+
+        # payroll 테이블: 신규 컬럼 추가
+        """ALTER TABLE payroll
+           ADD COLUMN IF NOT EXISTS labor_day_hours DECIMAL(6,2) NOT NULL DEFAULT 0.00
+           COMMENT '근로자의날 근무시간'""",
+
+        """ALTER TABLE payroll
+           ADD COLUMN IF NOT EXISTS annual_leave_hours DECIMAL(4,1) NOT NULL DEFAULT 0.0
+           COMMENT '연차시간 스냅샷'""",
+
+        # payroll: DECIMAL 정밀도 확장 (5,2 → 6,2)
+        "ALTER TABLE payroll MODIFY COLUMN day_hours DECIMAL(6,2) NOT NULL DEFAULT 0.00",
+        "ALTER TABLE payroll MODIFY COLUMN night_hours DECIMAL(6,2) NOT NULL DEFAULT 0.00",
+        "ALTER TABLE payroll MODIFY COLUMN weekly_allowance_hours DECIMAL(6,2) NOT NULL DEFAULT 0.00",
+        "ALTER TABLE payroll MODIFY COLUMN holiday_hours DECIMAL(6,2) NOT NULL DEFAULT 0.00",
+    ]
+
+    with engine.connect() as conn:
+        for stmt in ddl_statements:
+            try:
+                conn.execute(text(stmt))
+                conn.commit()
+            except Exception as e:
+                # 이미 적용된 경우 무시
+                pass
+
+
 @app.on_event("startup")
 async def on_startup():
     # ✅ 새 테이블만 생성 (기존 테이블/데이터 보존)
     # ❌ drop_all 절대 금지
     Base.metadata.create_all(bind=engine)
+
+    # 스키마 마이그레이션 (ALTER TABLE 등)
+    _run_schema_migrations()
 
     # Redis 연결 검증
     redis = get_redis()
@@ -55,7 +102,7 @@ async def on_startup():
                 password=hash_password(settings.ADMIN_PASSWORD),
                 birth_date=date(1998, 2, 4),
                 name=settings.ADMIN_NAME,
-                position=PositionEnum.manager,
+                position=PositionEnum.admin,
                 gender=GenderEnum.male,
                 email=settings.ADMIN_EMAIL,
                 phone="010-0000-0000",

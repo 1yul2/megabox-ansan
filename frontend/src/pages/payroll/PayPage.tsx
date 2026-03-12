@@ -1,15 +1,18 @@
+import { DollarSign } from 'lucide-react';
 import { useState } from 'react';
 
 import UserPosition from '../../features/pay/ui/UserPosition';
-import { ManagerPositions } from '@/features/pay';
-import { usePayrollQuery } from '@/features/pay/api/queries';
-import { mapToManagerPayroll } from '@/features/pay/model/manager/mapper';
-import { mapToUserPayroll } from '@/features/pay/model/user/mapper';
-import PeriodSelector from '@/features/pay/ui/PeriodSelector';
+import AdminPayrollManager from '../../features/pay/ui/AdminPayrollManager';
 import { EmptyBox } from './ui/EmptyBox';
-import { useAuthStore } from '@/shared/model/authStore';
+
 import { USER_ROLES } from '@/entities/user/model/role';
-import { DollarSign } from 'lucide-react';
+import { usePayrollQuery } from '@/features/pay/api/queries';
+import { mapToUserPayroll } from '@/features/pay/model/user/mapper';
+import { mapToManagerPayroll } from '@/features/pay/model/manager/mapper';
+import PeriodSelector from '@/features/pay/ui/PeriodSelector';
+import { PageHeader } from '@/shared/components/ui/PageHeader';
+import { useAuthStore } from '@/shared/model/authStore';
+import type { PayrollData } from '@/features/pay/model/type';
 
 export default function PayPage() {
   const currentYear = new Date().getFullYear();
@@ -17,6 +20,14 @@ export default function PayPage() {
 
   const [selectedYear, setSelectedYear] = useState(currentYear);
   const [selectedMonth, setSelectedMonth] = useState<number>(currentMonth);
+
+  const { user } = useAuthStore();
+  const isAdmin = user?.position === '관리자';
+  const isUser =
+    user?.position === USER_ROLES.CREW ||
+    user?.position === '크루' ||
+    user?.position === '리더' ||
+    user?.position === '미화';
 
   const { data: payrollList } = usePayrollQuery({
     year: selectedYear,
@@ -26,66 +37,59 @@ export default function PayPage() {
   const isEmptyPayroll =
     !payrollList ||
     (Array.isArray(payrollList) && payrollList.length === 0) ||
-    (!Array.isArray(payrollList) && payrollList.name === '');
-
-  const { user } = useAuthStore();
-  const isUser = user?.position === USER_ROLES.CREW;
+    (!Array.isArray(payrollList) &&
+      (payrollList as PayrollData).name === '' &&
+      (payrollList as PayrollData).gross_pay === 0);
 
   return (
     <div className="flex flex-col gap-6">
       {/* ── 페이지 헤더 ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-[#5b31a5]/10">
-            <DollarSign className="size-5 text-[#5b31a5]" />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold text-gray-900">급여 현황</h1>
-            <p className="text-sm text-gray-500">
-              {selectedYear}년 {selectedMonth}월 급여 내역
-            </p>
-          </div>
-        </div>
-
-        {/* 기간 선택 */}
-        <div className={isUser ? 'w-full sm:w-auto' : 'w-full'}>
-          <PeriodSelector
-            selectedYear={selectedYear}
-            selectedMonth={selectedMonth}
-            onChangeYear={setSelectedYear}
-            onChangeMonth={setSelectedMonth}
-          />
-        </div>
-      </div>
+      <PageHeader
+        icon={<DollarSign className="size-5 text-[#351f66]" />}
+        iconBg="bg-[#351f66]/10"
+        title={isAdmin ? '전직원 급여 관리' : '급여 명세서'}
+        description={`${selectedYear}년 ${selectedMonth}월 급여 내역`}
+      >
+        <PeriodSelector
+          selectedYear={selectedYear}
+          selectedMonth={selectedMonth}
+          onChangeYear={setSelectedYear}
+          onChangeMonth={setSelectedMonth}
+        />
+      </PageHeader>
 
       {/* ── 콘텐츠 ── */}
-      {isUser ? (
-        <div className="flex justify-center">
+      {isAdmin ? (
+        /* 관리자: 전직원 급여 테이블 */
+        isEmptyPayroll ? (
+          <EmptyBox selectedYear={selectedYear} selectedMonth={selectedMonth} />
+        ) : (
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+            <AdminPayrollManager
+              data={
+                Array.isArray(payrollList)
+                  ? mapToManagerPayroll(payrollList as PayrollData[])
+                  : []
+              }
+              year={selectedYear}
+              month={selectedMonth}
+            />
+          </div>
+        )
+      ) : (
+        /* 직원: 본인 급여 명세서 */
+        <div className="flex justify-center w-full">
           <div className="w-full max-w-2xl">
             {isEmptyPayroll ? (
               <EmptyBox selectedYear={selectedYear} selectedMonth={selectedMonth} />
             ) : (
-              payrollList && !Array.isArray(payrollList) && (
-                <UserPosition data={mapToUserPayroll(payrollList)} />
+              payrollList &&
+              !Array.isArray(payrollList) && (
+                <UserPosition data={mapToUserPayroll(payrollList as PayrollData)} />
               )
             )}
           </div>
         </div>
-      ) : (
-        <>
-          {isEmptyPayroll ? (
-            <EmptyBox selectedYear={selectedYear} selectedMonth={selectedMonth} />
-          ) : (
-            <>
-              {payrollList && !Array.isArray(payrollList) && (
-                <UserPosition data={mapToUserPayroll(payrollList)} />
-              )}
-              {payrollList && Array.isArray(payrollList) && (
-                <ManagerPositions filteredData={mapToManagerPayroll(payrollList)} />
-              )}
-            </>
-          )}
-        </>
       )}
     </div>
   );

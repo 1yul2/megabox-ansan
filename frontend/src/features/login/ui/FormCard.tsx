@@ -1,5 +1,5 @@
-import { useState } from 'react';
 import { LockKeyhole, UserPlus2 } from 'lucide-react';
+import { useState } from 'react';
 
 import LoginForm from './LoginForm';
 import { RegisterFunnel } from './RegisterFunnel';

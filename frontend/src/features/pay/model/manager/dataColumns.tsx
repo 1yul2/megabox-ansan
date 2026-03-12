@@ -1,6 +1,7 @@
+import PositionBadge from '../../ui/PositionBadge';
+
+import type { PayrollData } from '../type';
 import type { ReactNode } from 'react';
-import type { PayrollData } from '../type'
-import PositionBadge from '../../ui/PositionBadge'
 
 export type ColumnConfig = {
   key: keyof PayrollData;
@@ -28,7 +29,9 @@ export const dataColumns: ColumnGroup[] = [
         render: (value) => <PositionBadge role={value} />,
       },
       { key: 'wage', label: '시급' },
-      { key: 'rrn', label: '주민번호' ,
+      {
+        key: 'rrn',
+        label: '주민번호',
         // 주민번호 길이 임의 프론트 제한
         render: (value) => {
           if (!value) return '-';
@@ -89,8 +92,6 @@ export const dataColumns: ColumnGroup[] = [
   {
     group: '지급',
     highlight: 'primary',
-    columns: [
-      { key: 'net_pay', label: '총 지급액', highlight: 'primary' },
-    ],
+    columns: [{ key: 'net_pay', label: '총 지급액', highlight: 'primary' }],
   },
 ];

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Outlet } from 'react-router';
+
 import { SideNav } from '@/widgets/nav';
 import { MobileHeader } from '@/widgets/ui/MobileHeader';
 

@@ -1,8 +1,9 @@
-import { FormCard } from '@/features/login';
-import Logo from '@/shared/assets/logo/LogowithText_white.png';
-import LogoPurple from '@/shared/assets/logo/Megabox_Logo_Indigo.png';
-import BackgroundImage from '@/shared/assets/img/main_bg.png';
 import { Calendar, Clock, Users } from 'lucide-react';
+
+import { FormCard } from '@/features/login';
+import BackgroundImage from '@/shared/assets/img/main_bg.png';
+import Logo from '@/shared/assets/logo/Logo_white.png';
+import LogoPurple from '@/shared/assets/logo/Megabox_Logo_Indigo.png';
 
 const FEATURES = [
   { icon: Calendar, text: '실시간 스케줄 관리' },
@@ -78,9 +79,7 @@ const LoginPage = () => {
             {/* 데스크탑: 헤더 텍스트 */}
             <div className="hidden md:block mb-8">
               <h2 className="text-2xl font-bold text-gray-900">환영합니다</h2>
-              <p className="text-sm text-gray-500 mt-1">
-                계정에 로그인하여 서비스를 이용하세요
-              </p>
+              <p className="text-sm text-gray-500 mt-1">계정에 로그인하여 서비스를 이용하세요</p>
             </div>
 
             <FormCard />
