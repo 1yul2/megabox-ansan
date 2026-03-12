@@ -1,4 +1,4 @@
-import { CalendarDays, Plus } from 'lucide-react';
+import { CalendarDays, Download, Plus } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
@@ -6,6 +6,7 @@ import {
   useCreateHolidayMutation,
   useDeleteHolidayMutation,
   useHolidaysQuery,
+  useSyncHolidaysMutation,
   useUpdateHolidayMutation,
 } from '../api/queries';
 
@@ -28,7 +29,7 @@ import { Spinner } from '@/shared/components/ui/spinner';
 
 const CURRENT_YEAR = new Date().getFullYear();
 
-const YEAR_OPTIONS = Array.from({ length: 10 }, (_, i) => CURRENT_YEAR - i);
+const YEAR_OPTIONS = Array.from({ length: CURRENT_YEAR - 2020 + 2 }, (_, i) => CURRENT_YEAR + 1 - i);
 
 const HolidayManagement = () => {
   const [selectedYear, setSelectedYear] = useState<number>(CURRENT_YEAR);
@@ -36,11 +37,21 @@ const HolidayManagement = () => {
   const createMutation = useCreateHolidayMutation();
   const updateMutation = useUpdateHolidayMutation();
   const deleteMutation = useDeleteHolidayMutation();
+  const syncMutation = useSyncHolidaysMutation();
 
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<HolidayDTO | null>(null);
   const [pendingUpdateValues, setPendingUpdateValues] = useState<HolidayFormValues | null>(null);
   const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
+
+  const handleSync = () => {
+    syncMutation.mutate(selectedYear, {
+      onSuccess: (data) => {
+        toast.success(`${data.year}년 공휴일 ${data.saved}건을 불러왔습니다.`);
+      },
+      onError: () => toast.error('공휴일 자동 불러오기에 실패했습니다.'),
+    });
+  };
 
   const handleAdd = (values: HolidayFormValues) => {
     createMutation.mutate(values, {
@@ -111,10 +122,24 @@ const HolidayManagement = () => {
             </p>
           </div>
         </div>
-        <Button onClick={() => setIsAddOpen(true)}>
-          <Plus />
-          공휴일 추가
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={handleSync}
+            disabled={syncMutation.isPending}
+          >
+            {syncMutation.isPending ? (
+              <Spinner className="size-4" />
+            ) : (
+              <Download className="size-4" />
+            )}
+            공휴일 자동 불러오기
+          </Button>
+          <Button onClick={() => setIsAddOpen(true)}>
+            <Plus />
+            공휴일 추가
+          </Button>
+        </div>
       </div>
 
       {/* 연도 선택 */}

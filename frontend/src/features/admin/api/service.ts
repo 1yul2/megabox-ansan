@@ -10,6 +10,7 @@ import type {
   PendingUsersResponseDTO,
   RejectUserRequestDTO,
   SuspendUserRequestDTO,
+  SyncHolidaysResponseDTO,
   UpdateAdminUserRequestDTO,
   UpdateHolidayRequestDTO,
 } from './dto';
@@ -28,6 +29,9 @@ export const updateHoliday = (id: number, data: UpdateHolidayRequestDTO) =>
 
 export const deleteHoliday = (id: number) =>
   apiClient.delete<{ success: boolean }>({ url: `/api/admin/holidays/${id}` });
+
+export const syncHolidays = (year: number) =>
+  apiClient.post<SyncHolidaysResponseDTO>({ url: '/api/admin/holidays/all', params: { year } });
 
 // 직원 관리
 export const getAdminUsers = (params?: { q?: string; limit?: number; offset?: number }) =>
