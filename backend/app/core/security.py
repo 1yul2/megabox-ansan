@@ -58,6 +58,6 @@ async def get_current_user(
 
 
 async def get_current_admin(user: User = Depends(get_current_user)) -> User:
-    if user.position not in {PositionEnum.manager, PositionEnum.system}:
+    if user.position not in {PositionEnum.admin, PositionEnum.system}:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin only")
     return user

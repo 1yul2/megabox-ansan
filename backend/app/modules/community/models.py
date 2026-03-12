@@ -1,8 +1,10 @@
+from datetime import datetime
 from enum import Enum as PyEnum
 
 from sqlalchemy import (
     Boolean,
     Column,
+    DateTime,
     Enum,
     ForeignKey,
     Integer,
@@ -18,9 +20,9 @@ from app.core.database import Base
 
 class CategoryEnum(str, PyEnum):
     notice = "공지"
-    shift = "근무교대"
-    dayoff = "휴무신청"
     free_board = "자유게시판"
+    dayoff = "휴무신청"
+    shift = "근무교대"
 
 
 class Post(TimeStampedMixin, Base):
@@ -30,7 +32,7 @@ class Post(TimeStampedMixin, Base):
     category = Column(
         Enum(CategoryEnum),
         nullable=False,
-        comment="공지, 근무교대, 휴무신청, 자유게시판",
+        comment="공지, 자유게시판, 휴무신청, 근무교대",
     )
     title = Column(String(255), nullable=False, comment="제목")
     content = Column(Text, nullable=False, comment="내용")
@@ -48,6 +50,12 @@ class Post(TimeStampedMixin, Base):
         cascade="all, delete-orphan",
         passive_deletes=True,
     )
+    likes = relationship(
+        "PostLike",
+        back_populates="post",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
 
     def __repr__(self):
         short_title = (
@@ -61,10 +69,32 @@ class Post(TimeStampedMixin, Base):
         )
 
 
+class PostLike(Base):
+    __tablename__ = "community_post_like"
+    __table_args__ = (
+        UniqueConstraint("user_id", "post_id", name="uq_post_like_user_post"),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    post_id = Column(
+        Integer,
+        ForeignKey("community_post.id", ondelete="CASCADE"),
+        nullable=False,
+        comment="대상 게시글 id",
+    )
+    user_id = Column(
+        Integer,
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        comment="유저 id",
+    )
+
+    post = relationship("Post", back_populates="likes")
+
+
 class CommentLike(Base):
     __tablename__ = "community_comment_like"
     __table_args__ = (
-        # 좋아요는 한 번만
         UniqueConstraint("user_id", "comment_id", name="uq_comment_like_user_comment"),
     )
 
@@ -85,6 +115,29 @@ class CommentLike(Base):
     comment = relationship("Comment", back_populates="likes")
 
 
+class CommentMention(Base):
+    """댓글에서 @username 태그된 유저 기록"""
+    __tablename__ = "community_mention"
+
+    id = Column(Integer, primary_key=True, index=True)
+    comment_id = Column(
+        Integer,
+        ForeignKey("community_comment.id", ondelete="CASCADE"),
+        nullable=False,
+        comment="댓글 id",
+    )
+    mentioned_user_id = Column(
+        Integer,
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        comment="태그된 유저 id",
+    )
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+
+    comment = relationship("Comment", back_populates="mentions")
+    mentioned_user = relationship("User", foreign_keys=[mentioned_user_id])
+
+
 class Comment(TimeStampedMixin, Base):
     __tablename__ = "community_comment"
 
@@ -103,6 +156,12 @@ class Comment(TimeStampedMixin, Base):
     author = relationship("User", back_populates="comments")
     likes = relationship(
         "CommentLike", back_populates="comment", cascade="all, delete-orphan"
+    )
+    mentions = relationship(
+        "CommentMention",
+        back_populates="comment",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
     )
 
     def __repr__(self):

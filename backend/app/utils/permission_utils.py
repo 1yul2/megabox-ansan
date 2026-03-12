@@ -1,10 +1,6 @@
 from app.modules.auth.models import PositionEnum
 
-ADMIN_ROLES = {
-    PositionEnum.manager,
-    PositionEnum.assistant_manager,
-    PositionEnum.advisor,
-}
+ADMIN_ROLES = {PositionEnum.admin}
 
 STAFF_ROLES = {
     PositionEnum.leader,
@@ -16,13 +12,13 @@ SYSTEM_ROLES = PositionEnum.system
 
 
 # 관리자 여부
-def is_admin(user) -> bool:  # 관리자
+def is_admin(user) -> bool:
     return user.position in ADMIN_ROLES
 
 
-def is_staff(user) -> bool:  # 일반
+def is_staff(user) -> bool:
     return user.position in STAFF_ROLES
 
 
-def is_system(user) -> bool:  # 시스템
+def is_system(user) -> bool:
     return user.position == SYSTEM_ROLES

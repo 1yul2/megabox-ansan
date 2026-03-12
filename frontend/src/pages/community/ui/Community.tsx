@@ -6,8 +6,7 @@ import { useCategoryCountsQuery } from '@/features/community/api/queries';
 import { PageHeader } from '@/shared/components/ui/PageHeader';
 import { cn } from '@/shared/lib/utils';
 
-// ── 탭 정의 ────────────────────────────────────────────────────────────────
-
+// ── 탭 정의 (순서: 전체 → 공지사항 → 자유게시판 → 휴무신청 → 근무교대) ──────────────────────────────────────────────────────────────
 const TABS = [
   {
     label: '전체',
@@ -24,11 +23,11 @@ const TABS = [
     color: 'bg-red-500',
   },
   {
-    label: '근무교대',
-    path: 'shift',
-    icon: CalendarSync,
-    categoryKey: '근무교대',
-    color: 'bg-green-500',
+    label: '자유게시판',
+    path: 'freeboard',
+    icon: MessagesSquare,
+    categoryKey: '자유게시판',
+    color: 'bg-[#351f66]',
   },
   {
     label: '휴무신청',
@@ -38,11 +37,11 @@ const TABS = [
     color: 'bg-sky-500',
   },
   {
-    label: '자유게시판',
-    path: 'freeboard',
-    icon: MessagesSquare,
-    categoryKey: '자유게시판',
-    color: 'bg-[#351f66]',
+    label: '근무교대',
+    path: 'shift',
+    icon: CalendarSync,
+    categoryKey: '근무교대',
+    color: 'bg-green-500',
   },
 ] as const;
 
@@ -72,7 +71,7 @@ export default function Community() {
         icon={<MessagesSquare className="size-5 text-[#351f66]" />}
         iconBg="bg-[#351f66]/10"
         title="커뮤니티"
-        description="공지사항, 근무교대, 휴무신청 게시판"
+        description="공지사항, 자유게시판, 휴무신청, 근무교대 게시판"
       />
 
       {/* ── 탭 네비게이션 ── */}
