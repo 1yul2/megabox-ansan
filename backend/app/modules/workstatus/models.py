@@ -1,7 +1,13 @@
+from __future__ import annotations
+
+import enum
+from datetime import datetime
+
 from sqlalchemy import (
-    Boolean,
     Column,
     Date,
+    DateTime,
+    Enum as SQLEnum,
     ForeignKey,
     Integer,
     Time,
@@ -12,23 +18,39 @@ from sqlalchemy.orm import relationship
 from app.core.database import Base
 
 
-class Attendance(Base):
-    __tablename__ = "workstatus"
+class EventType(str, enum.Enum):
+    CLOCK_IN = "CLOCK_IN"
+    BREAK_START = "BREAK_START"
+    BREAK_END = "BREAK_END"
+    CLOCK_OUT = "CLOCK_OUT"
+
+
+class AttendanceEvent(Base):
+    """
+    이벤트 기반 근태 테이블
+    - 각 이벤트(출근/휴식시작/휴식종료/퇴근)를 개별 레코드로 저장
+    - 근무시간은 이벤트에서 계산 (저장 X)
+    - user_id + work_date + event_type 조합 유니크
+    """
+
+    __tablename__ = "attendance_events"
     __table_args__ = (
-        UniqueConstraint("user_id", "work_date", name="uq_user_workdate"),
+        UniqueConstraint(
+            "user_id", "work_date", "event_type",
+            name="uq_attendance_event",
+        ),
     )
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    work_date = Column(Date, nullable=False)
+    user_id = Column(
+        Integer,
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    work_date = Column(Date, nullable=False, index=True)
+    event_type = Column(SQLEnum(EventType), nullable=False)
+    event_time = Column(Time, nullable=False)
+    created_at = Column(DateTime, default=datetime.now)
 
-    check_in = Column(Time, nullable=True)
-    break_start = Column(Time, nullable=True)
-    break_end = Column(Time, nullable=True)
-    check_out = Column(Time, nullable=True)
-
-    total_work_minutes = Column(Integer, default=0)
-    total_break_minutes = Column(Integer, default=0)
-    is_payroll_applied = Column(Boolean, default=False)
-
-    user = relationship("User", back_populates="attendances")
+    user = relationship("User", back_populates="attendance_events")

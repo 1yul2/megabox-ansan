@@ -15,7 +15,8 @@
       "Bash(node_modules/.bin/tsc --noEmit 2>&1 | head -80)",
       "Bash(node node_modules/typescript/bin/tsc --noEmit 2>&1 | head -80)",
       "Bash(find /c/Users/megaa/OneDrive/Desktop/megabox/backend -name \"*.py\" | xargs grep -l \"create_all\\\\|Base.metadata\" 2>/dev/null | head -5)",
-      "Bash(cd:*)"
+      "Bash(cd:*)",
+      "Bash(ls \"C:\\\\Users\\\\megaa\\\\OneDrive\\\\Desktop\\\\megabox\\\\backend\\\\alembic\\\\versions\\\\\" 2>/dev/null || echo \"no versions dir\")"
     ]
   }
 }

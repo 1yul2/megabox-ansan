@@ -3,13 +3,17 @@ import type { PayrollResponseDTO } from '../api/dto';
 
 export function mapPayroll(dto: PayrollResponseDTO): PayrollData {
   return {
+    payroll_id: dto.payroll_id ?? 0,
+    user_id: dto.user_id ?? 0,
     name: dto.name ?? '',
     position: dto.position ?? '',
     wage: dto.wage ?? 0,
     rrn: dto.rrn ?? '',
+    birth_date: dto.birth_date ?? null,
+    pay_date: dto.pay_date ?? null,
     join_date: dto.join_date ?? '',
-    resign_date: dto.resign_date ?? '',
-    last_work_day: dto.last_work_day ?? '',
+    resign_date: dto.resign_date ?? null,
+    last_work_day: dto.last_work_day ?? null,
 
     bank_name: dto.bank_name ?? '',
     bank_account: dto.bank_account ?? '',
