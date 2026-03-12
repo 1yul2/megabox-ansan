@@ -1,7 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
+import { toast } from 'sonner';
 
 import {
+  approveUser,
   createAdminUser,
   createHoliday,
   createInsuranceRate,
@@ -13,6 +15,11 @@ import {
   getHolidays,
   getInsuranceRateByYear,
   getInsuranceRates,
+  getPendingUsers,
+  rejectUser,
+  suspendUser,
+  syncHolidays,
+  unsuspendUser,
   updateAdminUser,
   updateHoliday,
   updateInsuranceRate,
@@ -22,6 +29,8 @@ import type {
   CreateAdminUserRequestDTO,
   CreateHolidayRequestDTO,
   InsuranceRateCreateDTO,
+  RejectUserRequestDTO,
+  SuspendUserRequestDTO,
   UpdateAdminUserRequestDTO,
   UpdateHolidayRequestDTO,
 } from './dto';
@@ -42,9 +51,8 @@ export function useCreateHolidayMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (data: CreateHolidayRequestDTO) => createHoliday(data),
-    onSuccess: (_, variables) => {
-      const year = new Date(variables.date).getFullYear();
-      void queryClient.invalidateQueries({ queryKey: ADMIN_QUERY_KEYS.holidays(year) });
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ADMIN_QUERY_KEYS.holidaysBase() });
     },
   });
 }
@@ -70,7 +78,17 @@ export function useDeleteHolidayMutation() {
   });
 }
 
-// 유저
+export function useSyncHolidaysMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (year: number) => syncHolidays(year),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ADMIN_QUERY_KEYS.holidaysBase() });
+    },
+  });
+}
+
+// 직원 관리
 export function useAdminUsersQuery(params?: { q?: string; limit?: number; offset?: number }) {
   return useQuery({
     queryKey: ADMIN_QUERY_KEYS.users(params),
@@ -113,6 +131,61 @@ export function useDeleteAdminUserMutation() {
     mutationFn: (memberId: number) => deleteAdminUser(memberId),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ADMIN_QUERY_KEYS.usersBase() });
+    },
+  });
+}
+
+// 가입 승인 관리
+export function usePendingUsersQuery(params?: { limit?: number; offset?: number }) {
+  return useQuery({
+    queryKey: ADMIN_QUERY_KEYS.pendingUsers(),
+    queryFn: () => getPendingUsers(params),
+  });
+}
+
+export function useApproveUserMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (memberId: number) => approveUser(memberId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ADMIN_QUERY_KEYS.pendingUsers() });
+      void queryClient.invalidateQueries({ queryKey: ADMIN_QUERY_KEYS.usersBase() });
+      toast.success('가입이 승인되었습니다.');
+    },
+  });
+}
+
+export function useRejectUserMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ memberId, data }: { memberId: number; data?: RejectUserRequestDTO }) =>
+      rejectUser(memberId, data),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ADMIN_QUERY_KEYS.pendingUsers() });
+      toast.success('가입이 거절되었습니다.');
+    },
+  });
+}
+
+export function useSuspendUserMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ memberId, data }: { memberId: number; data?: SuspendUserRequestDTO }) =>
+      suspendUser(memberId, data),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ADMIN_QUERY_KEYS.usersBase() });
+      toast.success('계정이 정지되었습니다.');
+    },
+  });
+}
+
+export function useUnsuspendUserMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (memberId: number) => unsuspendUser(memberId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ADMIN_QUERY_KEYS.usersBase() });
+      toast.success('계정 정지가 해제되었습니다.');
     },
   });
 }

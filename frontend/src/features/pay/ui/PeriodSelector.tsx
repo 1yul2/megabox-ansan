@@ -67,10 +67,7 @@ export default function PeriodSelector({
       onChangeYear(selectedYear + 1);
       onChangeMonth(1);
     } else {
-      if (
-        selectedYear === currentYear &&
-        selectedMonth + 1 > currentMonth
-      ) {
+      if (selectedYear === currentYear && selectedMonth + 1 > currentMonth) {
         return;
       }
       onChangeMonth(selectedMonth + 1);
@@ -78,9 +75,8 @@ export default function PeriodSelector({
   };
 
   const isNextDisabled =
-    selectedYear > currentYear ||
-    (selectedYear === currentYear && selectedMonth >= currentMonth);
-    
+    selectedYear > currentYear || (selectedYear === currentYear && selectedMonth >= currentMonth);
+
   const isYearNextDisabled = tempYear >= currentYear;
 
   const formattedDate = `${selectedYear}.${String(selectedMonth).padStart(2, '0')}`;
@@ -112,9 +108,7 @@ export default function PeriodSelector({
           <ChevronRight
             size={20}
             className={`${
-              isNextDisabled
-                ? 'text-gray-300 cursor-not-allowed'
-                : 'cursor-pointer text-gray-700'
+              isNextDisabled ? 'text-gray-300 cursor-not-allowed' : 'cursor-pointer text-gray-700'
             }`}
             onClick={!isNextDisabled ? handleNextMonth : undefined}
           />
@@ -140,19 +134,14 @@ export default function PeriodSelector({
                   ? 'text-gray-300 cursor-not-allowed'
                   : 'cursor-pointer text-gray-700'
               }`}
-              onClick={
-                !isYearNextDisabled
-                  ? () => setTempYear((prev) => prev + 1)
-                  : undefined
-              }
+              onClick={!isYearNextDisabled ? () => setTempYear((prev) => prev + 1) : undefined}
             />
           </div>
 
           <div className="grid grid-cols-4 gap-2 mb-4">
             {Array.from({ length: 12 }, (_, i) => i + 1).map((month) => {
               const isFuture =
-                tempYear > currentYear ||
-                (tempYear === currentYear && month > currentMonth);
+                tempYear > currentYear || (tempYear === currentYear && month > currentMonth);
 
               return (
                 <button
@@ -164,8 +153,8 @@ export default function PeriodSelector({
                       isFuture
                         ? 'text-gray-300 cursor-not-allowed'
                         : tempMonth === month
-                        ? 'bg-mega text-white'
-                        : 'hover:bg-gray-100'
+                          ? 'bg-mega text-white'
+                          : 'hover:bg-gray-100'
                     }
                   `}
                 >

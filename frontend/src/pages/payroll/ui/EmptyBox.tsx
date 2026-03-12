@@ -1,4 +1,4 @@
-import { CalendarX } from "lucide-react";
+import { CalendarX } from 'lucide-react';
 
 export function EmptyBox({
   selectedYear,
@@ -13,9 +13,7 @@ export function EmptyBox({
         <CalendarX className="w-10 h-10 text-mega-secondary" />
       </div>
 
-      <div className="text-lg font-semibold text-gray-800">
-        급여 데이터가 없습니다
-      </div>
+      <div className="text-lg font-semibold text-gray-800">급여 데이터가 없습니다</div>
 
       <div className="text-sm text-gray-500 text-center">
         {selectedYear}년 {selectedMonth}월에 등록된 급여 정보가 없습니다.

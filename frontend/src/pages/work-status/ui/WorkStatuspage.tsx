@@ -1,12 +1,11 @@
-import { WorkStatus } from '@/features/work-status';
+import { WorkStatusPanel } from '@/features/work-status/ui/WorkStatusPanel';
 
-const WorkStatuspage = () => {
-  return (
-    // <div className="flex flex-col gap-10 p-15 relative w-full h-full items-center justify-center after:absolute after:bg-mega after:h-[40%] after:w-full after:-z-10 after:top-0 after:left-0">
-    <div>
-      <WorkStatus />
-    </div>
-  );
+/**
+ * 근태 입력 페이지 — 키오스크/태블릿/모바일 지원
+ * 로그인 없이 직원 선택 → 액션 버튼 탭으로 3초 내 근태 입력 가능
+ */
+const WorkStatusPage = () => {
+  return <WorkStatusPanel />;
 };
 
-export default WorkStatuspage;
+export default WorkStatusPage;

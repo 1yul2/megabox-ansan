@@ -43,7 +43,7 @@ export const createUserFormSchema = userFormSchema.extend({
   password: z.string().min(4, '비밀번호는 4자 이상이어야 합니다.'),
 });
 
-export const POSITION_OPTIONS = ['크루', '리더', '바이저', '점장'] as const;
+export const POSITION_OPTIONS = ['크루', '리더', '미화', '관리자'] as const;
 
 export const GENDER_OPTIONS = [
   { value: '남', label: '남' },

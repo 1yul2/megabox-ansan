@@ -5,57 +5,52 @@ import { ROUTES } from '../../shared/constants/routes';
 import type { PropsWithChildren } from 'react';
 
 import { useUserQuery } from '@/entities/user/api/queries';
-import { isSystemAccount, USER_ROLES } from '@/entities/user/model/role';
 import { Loading } from '@/pages/404';
 import { useAuthStore } from '@/shared/model/authStore';
 
 interface AuthRouteProps extends PropsWithChildren {
   isPublic?: boolean;
-  requireAdmin?: boolean; // 관리자 전용 페이지
-  allowSystem?: boolean; // 시스템 계정 접근 허용
+  requireAdmin?: boolean;
+  allowSystem?: boolean;
 }
 
 export const AuthRoute = ({ isPublic, requireAdmin, allowSystem, children }: AuthRouteProps) => {
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-  const accessToken = useAuthStore((state) => state.accessToken);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const accessToken = useAuthStore((s) => s.accessToken);
   const { data: user, isLoading } = useUserQuery();
-  console.log('AuthRoute - user:', user);
 
-  // 토큰은 있는데 user 아직 로딩 중
+  // 토큰은 있으나 user 아직 로딩 중
   if (accessToken && isLoading) {
-    return <Loading />; // TODO: 로딩 스피너 등으로 대체
+    return <Loading />;
   }
 
+  // 비인증 → 로그인 페이지
   if (!isPublic && !isAuthenticated) {
     return <Navigate to={ROUTES.LOGIN} replace />;
   }
 
-  // Public 페이지인데 로그인 상태
+  // 로그인 상태인데 Public 페이지 접근 → 분기
   if (isPublic && isAuthenticated && user) {
-    // 시스템 계정은 work-status로 리다이렉트
-    if (isSystemAccount(user.position)) {
+    if (user.is_system) {
       return <Navigate to={ROUTES.WORK_STATUS} replace />;
     }
-    // 일반 유저는 메인으로
     return <Navigate to={ROUTES.ROOT} replace />;
   }
 
-  // 인증된 상태에서 권한 체크
+  // 인증된 상태에서 권한 검사
   if (isAuthenticated && user) {
-    const userIsSystem = isSystemAccount(user.position);
-
-    // 시스템 계정은 work-status만 접근 가능
-    if (userIsSystem && !allowSystem) {
+    // 시스템 계정 → work-status만 허용
+    if (user.is_system && !allowSystem) {
       return <Navigate to={ROUTES.WORK_STATUS} replace />;
     }
 
-    // 관리자 계정 시스템 페이지 접근시 차단
-    if (user.position === USER_ROLES.ADMIN && allowSystem) {
+    // 관리자 계정이 시스템 전용 페이지 접근 차단
+    if (user.is_admin && !user.is_system && allowSystem) {
       return <Navigate to={ROUTES.ROOT} replace />;
     }
 
-    // 관리자 전용 페이지에 일반 유저 접근 시
-    if (requireAdmin && user.position !== USER_ROLES.ADMIN) {
+    // 관리자 전용 페이지에 일반 유저 접근 차단
+    if (requireAdmin && !user.is_admin) {
       return <Navigate to={ROUTES.ROOT} replace />;
     }
   }

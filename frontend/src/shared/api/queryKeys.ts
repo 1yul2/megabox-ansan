@@ -41,6 +41,7 @@ export const QUERY_KEYS = {
     users: (params?: { q?: string; limit?: number; offset?: number }) =>
       [...QUERY_KEYS.admin.base, 'users', params] as const,
     userDetail: (memberId: number) => [...QUERY_KEYS.admin.base, 'users', memberId] as const,
+    pendingUsers: () => [...QUERY_KEYS.admin.base, 'pending-users'] as const,
     insuranceRates: () => [...QUERY_KEYS.admin.base, 'insurance-rates'] as const,
     insuranceRateByYear: (year: number) =>
       [...QUERY_KEYS.admin.base, 'insurance-rates', year] as const,

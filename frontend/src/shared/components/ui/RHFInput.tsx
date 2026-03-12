@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import type { FieldValues, Path, UseFormReturn } from 'react-hook-form';
 
 import {
@@ -17,6 +18,9 @@ export interface RHFInputProps<T extends FieldValues> {
   type?: string;
   className?: string;
   disabled?: boolean;
+  maxLength?: number;
+  transform?: (value: string) => string;
+  suffix?: ReactNode;
 }
 
 const RHFInput = <T extends FieldValues>({
@@ -27,6 +31,9 @@ const RHFInput = <T extends FieldValues>({
   type = 'text',
   className = '',
   disabled = false,
+  maxLength,
+  transform,
+  suffix,
 }: RHFInputProps<T>) => {
   return (
     <FormField
@@ -36,14 +43,27 @@ const RHFInput = <T extends FieldValues>({
         <FormItem className="flex flex-col gap-0 relative w-full">
           {label && <FormLabel className="mb-1 ">{label}</FormLabel>}
           <FormControl>
-            <Input
-              type={type}
-              placeholder={placeholder}
-              disabled={disabled}
-              {...field}
-              data-testid={`input-${name}`} // 테스트 식별자 추가
-              className={className}
-            />
+            <div className="relative flex items-center">
+              <Input
+                type={type}
+                placeholder={placeholder}
+                disabled={disabled}
+                maxLength={maxLength}
+                data-testid={`input-${name}`}
+                className={suffix ? `pr-10 ${className}` : className}
+                {...field}
+                onChange={(e) => {
+                  const raw = e.target.value;
+                  const transformed = transform ? transform(raw) : raw;
+                  field.onChange(transformed);
+                }}
+              />
+              {suffix && (
+                <span className="absolute right-3 text-muted-foreground text-sm pointer-events-none">
+                  {suffix}
+                </span>
+              )}
+            </div>
           </FormControl>
           <FormMessage className="text-end mb-1 absolute top-0 right-0" />
         </FormItem>

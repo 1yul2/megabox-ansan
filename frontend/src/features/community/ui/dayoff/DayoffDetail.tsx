@@ -7,6 +7,8 @@ import {
 } from '../../../../features/community/model/statusLabel';
 import { type DayoffPost, communityPostList } from '../../mock/communityMock';
 
+import { PageHeader } from '@/shared/components/ui/PageHeader';
+
 export default function DayoffDetail() {
   const { id } = useParams<{ id: string }>();
 
@@ -20,14 +22,11 @@ export default function DayoffDetail() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-4">
-        <div className="flex items-center gap-2 text-2xl font-bold">
-          <CloudOff />
-          <span>휴무신청</span>
-        </div>
-
-        <div className="border-b" />
-      </div>
+      <PageHeader
+        icon={<CloudOff className="size-5 text-[#351f66]" />}
+        iconBg="bg-[#351f66]/10"
+        title="휴무신청"
+      />
 
       <div className="flex justify-between items-start">
         <div className="flex flex-col gap-1">

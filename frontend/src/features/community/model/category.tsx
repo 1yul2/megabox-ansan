@@ -10,9 +10,9 @@ export interface CategoryHolder {
 
 export const CATEGORY_LABEL = {
   notice: '공지',
-  shift: '근무교대',
-  dayoff: '휴무신청',
   free: '자유게시판',
+  dayoff: '휴무신청',
+  shift: '근무교대',
 } as const;
 
 export type CategoryKey = keyof typeof CATEGORY_LABEL;
@@ -69,4 +69,11 @@ export function getIconForCategory(category: string): ReactElement | null {
     default:
       return <MessagesSquare />;
   }
+}
+
+// 시스템 자동 생성 카테고리 (직접 글쓰기 불가)
+export const SYSTEM_GENERATED_CATEGORIES: CommunityCategory[] = ['근무교대', '휴무신청'];
+
+export function isSystemGeneratedCategory(category: CommunityCategory): boolean {
+  return SYSTEM_GENERATED_CATEGORIES.includes(category);
 }

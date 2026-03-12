@@ -1,5 +1,6 @@
-import type { PayrollData } from '../model/type';
 import { dataColumns } from '../model/manager/dataColumns';
+
+import type { PayrollData } from '../model/type';
 import type { ReactNode } from 'react';
 
 interface Props {
@@ -26,7 +27,6 @@ export default function ManagerTable({ data }: Props) {
       <div className="overflow-x-auto">
         <table className="min-w-[3200px] w-full text-xs">
           <thead className="bg-gray-100 text-gray-600">
-
             <tr className="text-center text-sm font-semibold">
               {dataColumns.map((group) => (
                 <th
@@ -36,8 +36,8 @@ export default function ManagerTable({ data }: Props) {
                     group.highlight === 'primary'
                       ? 'text-mega-secondary'
                       : group.highlight === 'danger'
-                      ? 'text-red-500'
-                      : 'text-gray-800'
+                        ? 'text-red-500'
+                        : 'text-gray-800'
                   }`}
                 >
                   {group.group}
@@ -51,18 +51,18 @@ export default function ManagerTable({ data }: Props) {
                   <th
                     key={String(col.key)}
                     className={`p-4 text-center ${
-                        col.rightBorder ? 'border-r border-gray-200' : ''
+                      col.rightBorder ? 'border-r border-gray-200' : ''
                     } ${
-                        col.highlight === 'primary'
-                            ? 'text-mega-secondary'
-                            : col.highlight === 'danger'
-                            ? 'text-red-500'
-                            : ''
+                      col.highlight === 'primary'
+                        ? 'text-mega-secondary'
+                        : col.highlight === 'danger'
+                          ? 'text-red-500'
+                          : ''
                     }`}
                   >
                     {col.label}
                   </th>
-                ))
+                )),
               )}
             </tr>
           </thead>
@@ -74,9 +74,7 @@ export default function ManagerTable({ data }: Props) {
                   group.columns.map((col) => {
                     const value = row[col.key];
 
-                    const renderedValue = col.render
-                      ? col.render(value, row)
-                      : formatValue(value);
+                    const renderedValue = col.render ? col.render(value, row) : formatValue(value);
 
                     return (
                       <td
@@ -87,14 +85,14 @@ export default function ManagerTable({ data }: Props) {
                           col.highlight === 'primary'
                             ? 'text-mega-secondary font-bold'
                             : col.highlight === 'danger'
-                            ? 'text-red-500 font-bold'
-                            : ''
+                              ? 'text-red-500 font-bold'
+                              : ''
                         }`}
                       >
                         {renderedValue}
                       </td>
                     );
-                  })
+                  }),
                 )}
               </tr>
             ))}
