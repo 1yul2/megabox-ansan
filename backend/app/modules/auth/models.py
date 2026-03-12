@@ -65,6 +65,7 @@ class User(Base):
     unavailable_days   = Column(JSON, nullable=True, comment="고정 불가 요일 [0=일~6=토]")
     health_cert_expire = Column(Date, nullable=True, comment="보건증 만료일")
     annual_leave_hours = Column(DECIMAL(3, 1), default=Decimal("5.5"), comment="연차 시간")
+    wage           = Column(Integer, default=0, nullable=False, comment="개인 시급 (0이면 최저시급 적용)")
     is_active      = Column(Boolean, default=True, nullable=False, comment="재직 상태")
 
     # ── 계정 상태 ──────────────────────────────────────
@@ -91,8 +92,8 @@ class User(Base):
     last_login_at        = Column(DateTime, nullable=True, comment="마지막 로그인 성공 시각")
 
     # ── Relationships ─────────────────────────────────
-    attendances = relationship("Attendance", back_populates="user", cascade="all, delete")
-    payrolls    = relationship("Payroll",    back_populates="user", cascade="all, delete")
+    attendance_events = relationship("AttendanceEvent", back_populates="user", cascade="all, delete")
+    payrolls          = relationship("Payroll",         back_populates="user", cascade="all, delete")
     user_wages  = relationship("UserWage",   back_populates="user", cascade="all, delete")
     posts    = relationship("Post",    back_populates="author", cascade="all, delete")
     comments = relationship("Comment", back_populates="author", cascade="all, delete-orphan")

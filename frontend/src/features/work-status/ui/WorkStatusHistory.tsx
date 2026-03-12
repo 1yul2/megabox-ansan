@@ -130,19 +130,21 @@ export const WorkStatusHistory = memo(({ record, isLoading }: WorkStatusHistoryP
           </div>
 
           {/* 근무 요약 */}
-          {record && (record.total_work_minutes > 0 || record.total_break_minutes > 0) && (
+          {record && (record.total_work_hours != null || (record.total_work_minutes ?? 0) > 0) && (
             <div className="mt-4 pt-4 border-t border-gray-100 flex gap-6">
               <div>
                 <p className="text-xs text-gray-400">총 근무 시간</p>
                 <p className="text-sm font-bold text-gray-800">
-                  {formatMinutes(record.total_work_minutes)}
+                  {record.total_work_hours != null
+                    ? `${record.total_work_hours.toFixed(2)}h`
+                    : formatMinutes(record.total_work_minutes ?? 0)}
                 </p>
               </div>
-              {record.total_break_minutes > 0 && (
+              {record.night_hours != null && record.night_hours > 0 && (
                 <div>
-                  <p className="text-xs text-gray-400">휴식 시간</p>
-                  <p className="text-sm font-bold text-amber-600">
-                    {formatMinutes(record.total_break_minutes)}
+                  <p className="text-xs text-gray-400">야간 시간</p>
+                  <p className="text-sm font-bold text-indigo-600">
+                    {record.night_hours.toFixed(2)}h
                   </p>
                 </div>
               )}

@@ -18,11 +18,16 @@ export interface WorkStatusResponseDTO {
   break_start: string | null;
   break_end: string | null;
   check_out: string | null;
-  total_work_minutes: number;
-  total_break_minutes: number;
-  id: number;
+  // 새 API: 시간 (소수점)
+  total_work_hours?: number | null;
+  day_hours?: number | null;
+  night_hours?: number | null;
+  // 구 API: 분 단위 (하위 호환)
+  total_work_minutes?: number;
+  total_break_minutes?: number;
+  id?: number;
   user_id: number;
-  user_name: string;
+  user_name?: string | null;
 }
 
 // ── 키오스크 전용 타입 ──────────────────────────────────────────────────
