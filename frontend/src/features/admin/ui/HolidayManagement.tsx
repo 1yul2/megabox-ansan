@@ -1,4 +1,4 @@
-import { CalendarDays, Plus } from 'lucide-react';
+import { CalendarDays, Download, Plus } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
@@ -6,6 +6,7 @@ import {
   useCreateHolidayMutation,
   useDeleteHolidayMutation,
   useHolidaysQuery,
+  useSyncHolidaysMutation,
   useUpdateHolidayMutation,
 } from '../api/queries';
 
@@ -17,19 +18,40 @@ import type { HolidayFormValues } from '../model/holiday.schema';
 
 import { Button } from '@/shared/components/ui/button';
 import ConfirmDialog from '@/shared/components/ui/confirm-dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/shared/components/ui/select';
 import { Spinner } from '@/shared/components/ui/spinner';
 
+const CURRENT_YEAR = new Date().getFullYear();
+
+const YEAR_OPTIONS = Array.from({ length: CURRENT_YEAR - 2020 + 2 }, (_, i) => CURRENT_YEAR + 1 - i);
+
 const HolidayManagement = () => {
-  const year = new Date().getFullYear();
-  const { data: holidays, isLoading, isError } = useHolidaysQuery(year);
+  const [selectedYear, setSelectedYear] = useState<number>(CURRENT_YEAR);
+  const { data: holidays, isLoading, isError } = useHolidaysQuery(selectedYear);
   const createMutation = useCreateHolidayMutation();
   const updateMutation = useUpdateHolidayMutation();
   const deleteMutation = useDeleteHolidayMutation();
+  const syncMutation = useSyncHolidaysMutation();
 
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<HolidayDTO | null>(null);
   const [pendingUpdateValues, setPendingUpdateValues] = useState<HolidayFormValues | null>(null);
   const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
+
+  const handleSync = () => {
+    syncMutation.mutate(selectedYear, {
+      onSuccess: (data) => {
+        toast.success(`${data.year}년 공휴일 ${data.saved}건을 불러왔습니다.`);
+      },
+      onError: () => toast.error('공휴일 자동 불러오기에 실패했습니다.'),
+    });
+  };
 
   const handleAdd = (values: HolidayFormValues) => {
     createMutation.mutate(values, {
@@ -94,16 +116,47 @@ const HolidayManagement = () => {
         <div className="flex gap-2">
           <CalendarDays className="size-5 text-mega-secondary mt-0.5" />
           <div>
-            <h2 className="text-base font-semibold">{year}년 공휴일 관리</h2>
+            <h2 className="text-base font-semibold">공휴일 관리</h2>
             <p className="text-sm text-muted-foreground">
               공휴일을 등록하면 급여 계산 시 자동으로 반영됩니다.
             </p>
           </div>
         </div>
-        <Button onClick={() => setIsAddOpen(true)}>
-          <Plus />
-          공휴일 추가
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={handleSync}
+            disabled={syncMutation.isPending}
+          >
+            {syncMutation.isPending ? (
+              <Spinner className="size-4" />
+            ) : (
+              <Download className="size-4" />
+            )}
+            공휴일 자동 불러오기
+          </Button>
+          <Button onClick={() => setIsAddOpen(true)}>
+            <Plus />
+            공휴일 추가
+          </Button>
+        </div>
+      </div>
+
+      {/* 연도 선택 */}
+      <div className="flex items-center gap-3 mb-5">
+        <span className="text-sm font-medium">조회 연도</span>
+        <Select value={String(selectedYear)} onValueChange={(val) => setSelectedYear(Number(val))}>
+          <SelectTrigger className="w-32">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {YEAR_OPTIONS.map((year) => (
+              <SelectItem key={year} value={String(year)}>
+                {year}년
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {/* 목록 */}

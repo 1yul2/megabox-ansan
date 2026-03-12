@@ -130,3 +130,8 @@ export interface InsuranceRateCreateDTO {
   long_term_care_rate: number;
   employment_insurance_rate: number;
 }
+
+export interface SyncHolidaysResponseDTO {
+  year: number;
+  saved: number;
+}
