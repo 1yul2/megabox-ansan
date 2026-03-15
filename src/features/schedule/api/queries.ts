@@ -3,42 +3,97 @@ import { toast } from 'sonner';
 
 import {
   approveDayOff,
+  approveShiftRequest,
+  createDayOff,
   createSchedule,
-  deleteDayOff,
+  createScheduleWeek,
+  createShiftRequest,
   deleteSchedule,
-  getDayOffRequests,
-  getScheduleUserList,
-  getScheduleWeek,
-  getShiftRequests,
-  requestDayOff,
+  getAdminDayOffs,
+  getAdminShiftRequests,
+  getMyDayOffs,
+  getMyShiftRequests,
+  getScheduleUsers,
+  getWeekOverlap,
+  getWeekSchedule,
+  rejectDayOff,
+  rejectShiftRequest,
   updateSchedule,
+  updateWeekStatus,
 } from './service';
 
 import type {
-  DayOffDecisionDTO,
   DayOffCreateDTO,
   ScheduleCreateDTO,
   ScheduleUpdateDTO,
+  ScheduleWeekCreateDTO,
+  ScheduleWeekStatusUpdateDTO,
+  ShiftRequestCreateDTO,
 } from './dto';
-import type { CategoryCountsResponse } from '@/features/community/api/dto';
 
 import { QUERY_KEYS } from '@/shared/api/queryKeys';
 
 const SK = QUERY_KEYS.schedule;
 
-// 특정 주차 스케줄 조회
-export function useScheduleWeekQuery(year: number, week: number) {
+// ─── 주간 스케줄 ──────────────────────────────────────────
+
+export function useWeekScheduleQuery(year: number, week: number) {
   return useQuery({
     queryKey: SK.week(year, week),
-    queryFn: () => getScheduleWeek(year, week),
+    queryFn: () => getWeekSchedule(year, week),
+    staleTime: 1000 * 60 * 2,
   });
 }
 
-// 스케줄 생성 (어드민)
+export function useWeekOverlapQuery(year: number, week: number) {
+  return useQuery({
+    queryKey: SK.overlap(year, week),
+    queryFn: () => getWeekOverlap(year, week),
+    staleTime: 1000 * 60 * 2,
+  });
+}
+
+export function useCreateScheduleWeekMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: ScheduleWeekCreateDTO) => createScheduleWeek(data),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: SK.base });
+      toast.success('주차 스케줄이 생성되었습니다.');
+    },
+  });
+}
+
+export function useUpdateWeekStatusMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      year,
+      week,
+      data,
+    }: {
+      year: number;
+      week: number;
+      data: ScheduleWeekStatusUpdateDTO;
+    }) => updateWeekStatus(year, week, data),
+    onSuccess: (_, { data }) => {
+      void queryClient.invalidateQueries({ queryKey: SK.base });
+      toast.success(
+        data.status === 'CONFIRMED'
+          ? '스케줄이 확정되었습니다. 직원들이 확인할 수 있습니다.'
+          : '스케줄이 초안으로 변경되었습니다.',
+      );
+    },
+  });
+}
+
+// ─── 스케줄 CRUD ──────────────────────────────────────────
+
 export function useCreateScheduleMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: ScheduleCreateDTO) => createSchedule(data),
+    mutationFn: ({ scheduleWeekId, data }: { scheduleWeekId: number; data: ScheduleCreateDTO }) =>
+      createSchedule(scheduleWeekId, data),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: SK.base });
       toast.success('스케줄이 생성되었습니다.');
@@ -46,7 +101,6 @@ export function useCreateScheduleMutation() {
   });
 }
 
-// 스케줄 수정 (어드민)
 export function useUpdateScheduleMutation() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -58,7 +112,6 @@ export function useUpdateScheduleMutation() {
   });
 }
 
-// 스케줄 삭제 (어드민)
 export function useDeleteScheduleMutation() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -67,102 +120,141 @@ export function useDeleteScheduleMutation() {
       void queryClient.invalidateQueries({ queryKey: SK.base });
       toast.success('스케줄이 삭제되었습니다.');
     },
+    onError: () => {
+      toast.error('스케줄 삭제에 실패했습니다.');
+    },
   });
 }
 
-// 휴무 리스트 조회
-export function useDayOffRequestsQuery(status?: string) {
+// ─── 직원 목록 ────────────────────────────────────────────
+
+export function useScheduleUsersQuery() {
   return useQuery({
-    queryKey: SK.dayoffs(status),
-    queryFn: () => getDayOffRequests(status),
+    queryKey: SK.users(),
+    queryFn: getScheduleUsers,
+    staleTime: 1000 * 60 * 5,
   });
 }
 
-// 휴무 신청 (크루)
-export function useRequestDayOffMutation() {
+// ─── 휴무 신청 ────────────────────────────────────────────
+
+export function useMyDayOffsQuery() {
+  return useQuery({
+    queryKey: SK.myDayoffs(),
+    queryFn: getMyDayOffs,
+  });
+}
+
+export function useAdminDayOffsQuery() {
+  return useQuery({
+    queryKey: SK.adminDayoffs(),
+    queryFn: getAdminDayOffs,
+  });
+}
+
+export function useCreateDayOffMutation() {
   const queryClient = useQueryClient();
-
   return useMutation({
-    mutationFn: (data: DayOffCreateDTO) => requestDayOff(data),
-
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({
-        queryKey: SK.dayoffsBase(),
-      });
-
-      // 휴무신청은 커뮤니티 게시글 목록으로 노출됨
-      await queryClient.invalidateQueries({
-        queryKey: ['communityPosts'],
-      });
-
-      // 상단 탭 뱃지 즉시 갱신 (캐시가 없을 때도 반영)
-      queryClient.setQueryData<CategoryCountsResponse>(
-        ['community', 'category-counts'],
-        (prev) => {
-          const counts = { ...(prev?.counts ?? {}) };
-          counts['휴무신청'] = (counts['휴무신청'] ?? 0) + 1;
-          counts['전체'] = (counts['전체'] ?? 0) + 1;
-          return { counts };
-        },
-        { updatedAt: 0 },
-      );
-
-      await queryClient.invalidateQueries({
-        queryKey: ['community', 'category-counts'],
-        refetchType: 'all',
-      });
-
-      await queryClient.refetchQueries({
-        queryKey: ['community', 'category-counts'],
-        type: 'all',
-      });
-
+    mutationFn: (data: DayOffCreateDTO) => createDayOff(data),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: SK.dayoffsBase() });
+      void queryClient.invalidateQueries({ queryKey: ['community'] });
       toast.success('휴무 신청이 완료되었습니다.');
     },
   });
 }
 
-// 휴무 승인/거절 (어드민)
 export function useApproveDayOffMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, data }: { id: number; data: DayOffDecisionDTO }) => approveDayOff(id, data),
-    onSuccess: (_, { data }) => {
-      void queryClient.invalidateQueries({ queryKey: SK.dayoffsBase() });
-      toast.success(
-        data.status === 'APPROVED' ? '휴무 신청을 승인했습니다.' : '휴무 신청을 거절했습니다.',
-      );
-    },
-  });
-}
-
-// 휴무 삭제
-export function useDeleteDayOffMutation() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (id: number) => deleteDayOff(id),
+    mutationFn: (id: number) => approveDayOff(id),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: SK.dayoffsBase() });
-      toast.success('휴무 신청이 삭제되었습니다.');
+      toast.success('휴무 신청을 승인했습니다.');
     },
   });
 }
 
-// 근무교대 신청 목록 조회
-export function useShiftRequestsQuery() {
-  return useQuery({
-    queryKey: SK.shifts(),
-    queryFn: getShiftRequests,
+export function useRejectDayOffMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => rejectDayOff(id),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: SK.dayoffsBase() });
+      toast.success('휴무 신청을 반려했습니다.');
+    },
   });
 }
 
-// 스케줄 배정용 직원 목록 조회
-export function useScheduleUsersQuery() {
+// ─── 근무교대 ─────────────────────────────────────────────
+
+export function useMyShiftRequestsQuery() {
   return useQuery({
-    queryKey: SK.users(),
-    queryFn: async () => {
-      const res = await getScheduleUserList();
-      return res.items;
+    queryKey: SK.myShifts(),
+    queryFn: getMyShiftRequests,
+  });
+}
+
+export function useAdminShiftRequestsQuery() {
+  return useQuery({
+    queryKey: SK.adminShifts(),
+    queryFn: getAdminShiftRequests,
+  });
+}
+
+export function useCreateShiftRequestMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: ShiftRequestCreateDTO) => createShiftRequest(data),
+    onSuccess: (_, data) => {
+      void queryClient.invalidateQueries({ queryKey: SK.shiftsBase() });
+      void queryClient.invalidateQueries({ queryKey: ['community'] });
+      toast.success(
+        data.type === 'EXCHANGE'
+          ? '근무교대 신청이 완료되었습니다.'
+          : '대타 신청이 완료되었습니다.',
+      );
+    },
+    onError: (err: unknown) => {
+      if (
+        typeof err === 'object' &&
+        err !== null &&
+        'response' in err
+      ) {
+        const axErr = err as { response?: { data?: { detail?: { message?: string } | string } } };
+        const detail = axErr.response?.data?.detail;
+        if (typeof detail === 'object' && detail !== null && 'message' in detail) {
+          toast.error(detail.message as string);
+          return;
+        }
+        if (typeof detail === 'string') {
+          toast.error(detail);
+          return;
+        }
+      }
+      toast.error('근무교대 신청에 실패했습니다.');
+    },
+  });
+}
+
+export function useApproveShiftMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => approveShiftRequest(id),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: SK.base });
+      toast.success('근무교대 신청이 승인되었습니다. 스케줄이 자동으로 변경됩니다.');
+    },
+  });
+}
+
+export function useRejectShiftMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => rejectShiftRequest(id),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: SK.shiftsBase() });
+      toast.success('근무교대 신청을 반려했습니다.');
     },
   });
 }

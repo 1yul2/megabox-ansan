@@ -1,6 +1,6 @@
-import { AlertTriangle, CheckCircle, X } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, PenLine, ShieldCheck, X } from 'lucide-react';
 
-type ScheduleStatus = 'DRAFT' | 'CONFIRMED';
+import type { ScheduleStatus } from '../model/type';
 
 import { Button } from '@/shared/components/ui/button';
 import {
@@ -16,7 +16,7 @@ interface StatusChangeModalProps {
   onClose: () => void;
   onConfirm: () => void;
   isPending?: boolean;
-  currentStatus: ScheduleStatus | null | undefined;
+  currentStatus?: ScheduleStatus;
   year: number;
   week: number;
 }
@@ -30,24 +30,24 @@ const StatusChangeModal = ({
   year,
   week,
 }: StatusChangeModalProps) => {
-  const isConfirming = currentStatus === 'DRAFT' || currentStatus == null;
+  const isConfirming = currentStatus !== 'CONFIRMED';
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-      <DialogContent showCloseButton={false} className="p-0 overflow-hidden max-w-sm rounded-2xl">
-        {/* Header with gradient */}
+      <DialogContent showCloseButton={false} className="p-0 overflow-hidden max-w-md rounded-2xl">
+        {/* Header */}
         <div
           className={
             isConfirming
-              ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 px-6 py-5 flex items-center gap-3'
-              : 'bg-gradient-to-r from-amber-500 to-amber-600 px-6 py-5 flex items-center gap-3'
+              ? 'bg-gradient-to-r from-emerald-500 to-teal-500 px-6 py-5 flex items-center gap-3'
+              : 'bg-gradient-to-r from-amber-500 to-orange-500 px-6 py-5 flex items-center gap-3'
           }
         >
           <div className="w-9 h-9 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
             {isConfirming ? (
-              <CheckCircle className="text-white size-5" />
+              <ShieldCheck className="text-white size-5" />
             ) : (
-              <AlertTriangle className="text-white size-5" />
+              <PenLine className="text-white size-5" />
             )}
           </div>
           <DialogTitle className="text-white font-bold">
@@ -63,37 +63,40 @@ const StatusChangeModal = ({
 
         {/* Body */}
         <div className="p-6 space-y-4">
-          {/* Week info */}
-          <div className="flex items-center gap-2">
-            <div className="w-1 h-8 rounded-full bg-mega-secondary" />
-            <div>
-              <p className="text-xs text-muted-foreground">대상 주차</p>
-              <p className="text-sm font-semibold text-gray-800">
-                {year}년 {week}주차 스케줄
-              </p>
-            </div>
-          </div>
-
-          {/* Info message */}
+          {/* Info box */}
           <div
             className={
               isConfirming
-                ? 'bg-emerald-50 border border-emerald-200 rounded-xl p-4'
-                : 'bg-amber-50 border border-amber-200 rounded-xl p-4'
+                ? 'bg-emerald-50 border border-emerald-100 rounded-xl p-4'
+                : 'bg-amber-50 border border-amber-100 rounded-xl p-4'
             }
           >
-            {isConfirming ? (
-              <p className="text-sm text-emerald-700 leading-relaxed">
-                확정 후 직원들이 스케줄을 확인할 수 있습니다.
-              </p>
-            ) : (
-              <p className="text-sm text-amber-700 leading-relaxed">
-                초안으로 변경하면 직원들이 미래 스케줄을 볼 수 없게 됩니다.
-              </p>
-            )}
+            <div className="flex items-start gap-3">
+              {isConfirming ? (
+                <CheckCircle2 className="size-5 text-emerald-600 mt-0.5 shrink-0" />
+              ) : (
+                <AlertTriangle className="size-5 text-amber-600 mt-0.5 shrink-0" />
+              )}
+              <div>
+                <p
+                  className={`font-semibold text-sm mb-1 ${isConfirming ? 'text-emerald-700' : 'text-amber-700'}`}
+                >
+                  {isConfirming
+                    ? `${year}년 ${week}주차 스케줄을 확정합니다`
+                    : `${year}년 ${week}주차 스케줄을 초안으로 변경합니다`}
+                </p>
+                <p
+                  className={`text-xs leading-relaxed ${isConfirming ? 'text-emerald-600' : 'text-amber-600'}`}
+                >
+                  {isConfirming
+                    ? '확정된 스케줄은 모든 직원이 확인할 수 있습니다. 확정 후에도 수정은 가능합니다.'
+                    : '초안으로 변경 시 직원들에게 임시 상태로 표시됩니다. 다시 확정하면 최종 확정됩니다.'}
+                </p>
+              </div>
+            </div>
           </div>
 
-          <p className="text-sm text-gray-600 font-medium">변경하시겠습니까?</p>
+          <p className="text-sm text-gray-500 text-center">계속 진행하시겠습니까?</p>
         </div>
 
         {/* Footer */}

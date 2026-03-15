@@ -5,6 +5,7 @@ import { Link } from 'react-router';
 
 import type { PostDTO } from '@/entities/post/api/dto';
 import type { HomeScheduleItem } from '@/features/home/ui/ScheduleListItem';
+import type { WeekScheduleResponse } from '@/features/schedule';
 import type { ReactNode } from 'react';
 
 import { payQueries } from '@/entities/pay/api/queries';
@@ -12,8 +13,8 @@ import { normalizePayOverview } from '@/entities/pay/model/payOverview';
 import { postQueries } from '@/entities/post/api/queries';
 import { useUserQuery } from '@/entities/user/api/queries';
 import { ScheduleList, UserCalendar } from '@/features/home';
-import { getScheduleWeek } from '@/features/schedule/api/service';
-import { getISOWeek, useScheduleWeekQuery } from '@/features/schedule';
+import { getISOWeek, useWeekScheduleQuery } from '@/features/schedule';
+import { getWeekSchedule } from '@/features/schedule/api/service';
 import { QUERY_KEYS } from '@/shared/api/queryKeys';
 import { ROUTES } from '@/shared/constants/routes';
 import { formatDate } from '@/shared/lib/date';
@@ -137,13 +138,18 @@ const HomePage = () => {
 
   // 이번 주 스케줄 (ScheduleList용)
   const { year: isoYear, week } = getISOWeek(today);
-  const { data: allSchedules = [], isLoading: scheduleLoading } = useScheduleWeekQuery(
-    isoYear,
-    week,
-  );
-  const mySchedules = allSchedules
+  const { data: weekData, isLoading: scheduleLoading } = useWeekScheduleQuery(isoYear, week);
+  const allSchedules = weekData?.schedules ?? [];
+  const mySchedules: HomeScheduleItem[] = allSchedules
     .filter((s) => s.user_id === user?.id)
-    .sort((a, b) => a.work_date.localeCompare(b.work_date));
+    .sort((a, b) => a.work_date.localeCompare(b.work_date))
+    .map((s) => ({
+      id: s.id,
+      position: s.user_position,
+      work_date: s.work_date,
+      start_time: s.start_time,
+      end_time: s.end_time,
+    }));
 
   // 이번 달 전체 스케줄 (UserCalendar용)
   const weeksInMonth = React.useMemo(() => getWeeksInMonth(year, month), [year, month]);
@@ -151,7 +157,7 @@ const HomePage = () => {
   const monthWeekResults = useQueries({
     queries: weeksInMonth.map(({ year: wYear, week: wWeek }) => ({
       queryKey: QUERY_KEYS.schedule.week(wYear, wWeek),
-      queryFn: () => getScheduleWeek(wYear, wWeek),
+      queryFn: (): Promise<WeekScheduleResponse> => getWeekSchedule(wYear, wWeek),
       staleTime: 5 * 60 * 1000,
     })),
   });
@@ -164,7 +170,7 @@ const HomePage = () => {
     if (!user) return map;
 
     for (const result of monthWeekResults) {
-      const schedules = result.data ?? [];
+      const schedules = result.data?.schedules ?? [];
       for (const s of schedules) {
         if (s.user_id !== user.id) continue;
 
@@ -175,7 +181,7 @@ const HomePage = () => {
         const existing = map.get(s.work_date) ?? [];
         existing.push({
           id: s.id,
-          position: s.position,
+          position: s.user_position,
           work_date: s.work_date,
           start_time: s.start_time,
           end_time: s.end_time,
@@ -189,7 +195,7 @@ const HomePage = () => {
   // 커뮤니티 데이터
   const { data: posts = { items: [] } } = useQuery(postQueries.allPosts());
   const recentPosts = posts.items.slice(0, 5);
-  console.log("post", posts)
+  console.log('post', posts);
   const greeting = () => {
     const h = today.getHours();
     if (h < 6) return '야간 근무 수고하세요';
@@ -263,7 +269,10 @@ const HomePage = () => {
           {/* 급여 카드 */}
           <div
             className="rounded-2xl p-5 text-white"
-            style={{ background: 'linear-gradient(135deg, var(--color-nav-bg) 0%, var(--color-mega) 60%, var(--color-mega-secondary) 100%)' }}
+            style={{
+              background:
+                'linear-gradient(135deg, var(--color-nav-bg) 0%, var(--color-mega) 60%, var(--color-mega-secondary) 100%)',
+            }}
           >
             <div className="flex items-center justify-between mb-4">
               <span className="text-sm font-medium text-white/70">
