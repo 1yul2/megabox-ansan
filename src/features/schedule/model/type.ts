@@ -39,23 +39,3 @@ export interface ScheduleUserOption {
   username: string;
   name: string;
 }
-
-export type ScheduleStatus = 'DRAFT' | 'CONFIRMED';
-
-export interface TimeSlotOverlap {
-  start_time: string;
-  end_time: string;
-  count: number;
-  employees: { id: number; name: string }[];
-}
-
-export interface DayOverlapResponse {
-  work_date: string;
-  slots: TimeSlotOverlap[];
-}
-
-export interface WeekOverlapResponse {
-  year: number;
-  week_number: number;
-  days: DayOverlapResponse[];
-}
