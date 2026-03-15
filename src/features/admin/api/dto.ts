@@ -74,7 +74,6 @@ export interface UpdateAdminUserRequestDTO {
   gender?: string;
   birth_date?: string;
   ssn?: string;
-  password?: string;
   phone?: string;
   email?: string;
   bank_name?: string;
@@ -135,21 +134,4 @@ export interface InsuranceRateCreateDTO {
 export interface SyncHolidaysResponseDTO {
   year: number;
   saved: number;
-}
-
-// 최저임금
-export interface DefaultWageResponseDTO {
-  id: number;
-  year: number;
-  wage: number;
-}
-
-// 시급 일괄 적용
-export interface BulkUpdateWageRequestDTO {
-  wage: number;
-  zero_only: boolean;
-}
-
-export interface BulkUpdateWageResponseDTO {
-  updated_count: number;
 }

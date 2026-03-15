@@ -4,7 +4,6 @@ import { toast } from 'sonner';
 
 import {
   approveUser,
-  bulkUpdateWage,
   createAdminUser,
   createHoliday,
   createInsuranceRate,
@@ -13,7 +12,6 @@ import {
   deleteInsuranceRate,
   getAdminUserDetail,
   getAdminUsers,
-  getCurrentDefaultWage,
   getHolidays,
   getInsuranceRateByYear,
   getInsuranceRates,
@@ -28,7 +26,6 @@ import {
 } from './service';
 
 import type {
-  BulkUpdateWageRequestDTO,
   CreateAdminUserRequestDTO,
   CreateHolidayRequestDTO,
   InsuranceRateCreateDTO,
@@ -236,25 +233,6 @@ export function useUpdateInsuranceRateMutation() {
         queryKey: ADMIN_QUERY_KEYS.insuranceRateByYear(variables.year),
       });
     },
-  });
-}
-
-// 최저임금
-export function useBulkUpdateWageMutation() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (data: BulkUpdateWageRequestDTO) => bulkUpdateWage(data),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ADMIN_QUERY_KEYS.usersBase() });
-    },
-  });
-}
-
-export function useCurrentDefaultWageQuery() {
-  return useQuery({
-    queryKey: ADMIN_QUERY_KEYS.currentDefaultWage(),
-    queryFn: getCurrentDefaultWage,
-    retry: false,
   });
 }
 

@@ -2,11 +2,8 @@ import type {
   AdminUserDTO,
   AdminUserDetailDTO,
   AdminUsersResponseDTO,
-  BulkUpdateWageRequestDTO,
-  BulkUpdateWageResponseDTO,
   CreateAdminUserRequestDTO,
   CreateHolidayRequestDTO,
-  DefaultWageResponseDTO,
   HolidayDTO,
   InsuranceRateCreateDTO,
   InsuranceRateResponseDTO,
@@ -83,11 +80,3 @@ export const updateInsuranceRate = (year: number, data: InsuranceRateCreateDTO) 
 
 export const deleteInsuranceRate = (year: number) =>
   apiClient.delete<void>({ url: `/api/admin/insurance-rates/${year}` });
-
-// 최저임금
-export const getCurrentDefaultWage = () =>
-  apiClient.get<DefaultWageResponseDTO>({ url: '/api/admin/default-wage/current' });
-
-// 시급 일괄 적용
-export const bulkUpdateWage = (data: BulkUpdateWageRequestDTO) =>
-  apiClient.patch<BulkUpdateWageResponseDTO>({ url: '/api/admin/users/wage/bulk', data });
