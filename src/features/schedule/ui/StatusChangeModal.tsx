@@ -1,6 +1,6 @@
 import { AlertTriangle, CheckCircle, X } from 'lucide-react';
 
-import type { ScheduleStatus } from '../model/type';
+type ScheduleStatus = 'DRAFT' | 'CONFIRMED';
 
 import { Button } from '@/shared/components/ui/button';
 import {

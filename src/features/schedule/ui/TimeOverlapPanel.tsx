@@ -1,8 +1,24 @@
 import { Users } from 'lucide-react';
 
-import type { DayOverlapResponse, TimeSlotOverlap, WeekOverlapResponse } from '../model/type';
-
 import { formatDate, WEEKDAY_KO } from '../model/weekUtils';
+
+interface TimeSlotOverlap {
+  start_time: string;
+  end_time: string;
+  count: number;
+  employees: { id: number; name: string }[];
+}
+
+interface DayOverlapResponse {
+  work_date: string;
+  slots: TimeSlotOverlap[];
+}
+
+interface WeekOverlapResponse {
+  year: number;
+  week_number: number;
+  days: DayOverlapResponse[];
+}
 
 import { cn } from '@/shared/lib/utils';
 
