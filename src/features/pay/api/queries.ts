@@ -8,20 +8,15 @@ import { exportPayrollExcel, getPayroll, updatePayroll } from './service';
 import type { PayrollResponse } from './dto';
 import type { PayrollData } from '../model/type';
 
-import { useAuthStore } from '@/shared/model/authStore';
-
 interface UsePayrollQueryParams {
   year: number;
   month?: number;
 }
 
 export const usePayrollQuery = ({ year, month }: UsePayrollQueryParams) => {
-  const accessToken = useAuthStore((state) => state.accessToken);
-
   return useQuery<PayrollResponse, Error, PayrollData | PayrollData[]>({
     queryKey: ['payroll', year, month],
     queryFn: () => getPayroll({ year, month }),
-    enabled: !!accessToken,
     select: (data) => {
       if (Array.isArray(data)) {
         return data.map(mapPayroll);
@@ -45,7 +40,7 @@ export const useUpdatePayrollMutation = () => {
     }) => updatePayroll(payrollId, data),
 
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['payroll'] });
+      queryClient.invalidateQueries({ queryKey: ['payroll'] });
       toast.success('급여 항목이 수정되었습니다.');
     },
     onError: () => {

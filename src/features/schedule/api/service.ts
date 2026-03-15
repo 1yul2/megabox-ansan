@@ -1,134 +1,82 @@
 import type {
+  DayOffDecisionDTO,
   DayOffCreateDTO,
   ScheduleCreateDTO,
   ScheduleUpdateDTO,
-  ScheduleWeekCreateDTO,
-  ScheduleWeekStatusUpdateDTO,
-  ShiftRequestCreateDTO,
 } from './dto';
-import type {
-  DayOffResponse,
-  ScheduleResponse,
-  ScheduleUserOption,
-  ScheduleWeekResponse,
-  ShiftRequestResponse,
-  WeekOverlapResponse,
-  WeekScheduleResponse,
-} from '../model/type';
+import type { DayOffResponse, ScheduleResponse, ShiftResponse } from '../model/type';
 
 import { apiClient } from '@/shared/api/apiClients';
 
-// ─── 주간 스케줄 ──────────────────────────────────────────
-
-export const getWeekSchedule = (year: number, weekNumber: number) =>
-  apiClient.get<WeekScheduleResponse>({
+// 특정 주차 스케줄 조회
+export const getScheduleWeek = (year: number, weekNumber: number) =>
+  apiClient.get<ScheduleResponse[]>({
     url: `/api/schedule/week/${year}/${weekNumber}`,
   });
 
-export const createScheduleWeek = (data: ScheduleWeekCreateDTO) =>
-  apiClient.post<ScheduleWeekResponse>({
-    url: '/api/schedule/week',
-    data,
-  });
-
-export const updateWeekStatus = (
-  year: number,
-  weekNumber: number,
-  data: ScheduleWeekStatusUpdateDTO,
-) =>
-  apiClient.patch<ScheduleWeekResponse>({
-    url: `/api/schedule/week/${year}/${weekNumber}/status`,
-    data,
-  });
-
-export const getWeekOverlap = (year: number, weekNumber: number) =>
-  apiClient.get<WeekOverlapResponse>({
-    url: `/api/schedule/week/${year}/${weekNumber}/overlap`,
-  });
-
-// ─── 스케줄 CRUD ──────────────────────────────────────────
-
-export const createSchedule = (scheduleWeekId: number, data: ScheduleCreateDTO) =>
+// 스케줄 생성 (어드민)
+export const createSchedule = (data: ScheduleCreateDTO) =>
   apiClient.post<ScheduleResponse>({
-    url: '/api/schedule/',
-    params: { schedule_week_id: scheduleWeekId },
+    url: '/api/schedule/create',
     data,
   });
 
+// 스케줄 수정 (어드민)
 export const updateSchedule = (scheduleId: number, data: ScheduleUpdateDTO) =>
   apiClient.patch<ScheduleResponse>({
     url: `/api/schedule/${scheduleId}`,
     data,
   });
 
+// 스케줄 삭제 (어드민)
 export const deleteSchedule = (scheduleId: number) =>
   apiClient.delete<void>({
     url: `/api/schedule/${scheduleId}`,
   });
 
-// ─── 직원 목록 ────────────────────────────────────────────
-
-export const getScheduleUsers = () =>
-  apiClient.get<ScheduleUserOption[]>({
-    url: '/api/schedule/users',
-  });
-
-// ─── 휴무 신청 ────────────────────────────────────────────
-
-export const createDayOff = (data: DayOffCreateDTO) =>
+// 휴무 신청 (크루)
+export const requestDayOff = (data: DayOffCreateDTO) =>
   apiClient.post<DayOffResponse>({
-    url: '/api/schedule/dayoff/',
+    url: '/api/schedule/dayoff/apply',
     data,
   });
 
-export const getMyDayOffs = () =>
+// 휴무 리스트 조회
+export const getDayOffRequests = (status?: string) =>
   apiClient.get<DayOffResponse[]>({
-    url: '/api/schedule/dayoff/my',
+    url: '/api/schedule/dayoff',
+    params: status ? { status } : undefined,
   });
 
-export const getAdminDayOffs = () =>
-  apiClient.get<DayOffResponse[]>({
-    url: '/api/schedule/dayoff/admin',
-  });
-
-export const approveDayOff = (dayoffId: number) =>
+// 휴무 승인/거절 (어드민)
+export const approveDayOff = (dayOffId: number, data: DayOffDecisionDTO) =>
   apiClient.patch<DayOffResponse>({
-    url: `/api/schedule/dayoff/${dayoffId}/approve`,
-    data: {},
+    url: `/api/schedule/dayoff/${dayOffId}`,
+    data,
   });
 
-export const rejectDayOff = (dayoffId: number) =>
-  apiClient.patch<DayOffResponse>({
-    url: `/api/schedule/dayoff/${dayoffId}/reject`,
-    data: {},
+// 휴무 삭제
+export const deleteDayOff = (dayOffId: number) =>
+  apiClient.delete<void>({
+    url: `/api/schedule/dayoff/${dayOffId}`,
   });
 
-// ─── 근무교대 ─────────────────────────────────────────────
-
-export const createShiftRequest = (data: ShiftRequestCreateDTO) =>
-  apiClient.post<ShiftRequestResponse>({
+// 근무교대 신청 목록 조회
+export const getShiftRequests = () =>
+  apiClient.get<ShiftResponse[]>({
     url: '/api/schedule/shift/',
-    data,
   });
 
-export const getMyShiftRequests = () =>
-  apiClient.get<ShiftRequestResponse[]>({
-    url: '/api/schedule/shift/my',
-  });
+// 스케줄 배정용 직원 목록 항목 타입 (id, username, name만 사용)
+interface ScheduleUserListItem {
+  id: number;
+  username: string;
+  name: string;
+}
 
-export const getAdminShiftRequests = () =>
-  apiClient.get<ShiftRequestResponse[]>({
-    url: '/api/schedule/shift/admin',
-  });
-
-export const approveShiftRequest = (shiftId: number) =>
-  apiClient.patch<ShiftRequestResponse>({
-    url: `/api/schedule/shift/${shiftId}/approve`,
-    data: {},
-  });
-
-export const rejectShiftRequest = (shiftId: number) =>
-  apiClient.patch<ShiftRequestResponse>({
-    url: `/api/schedule/shift/${shiftId}/reject`,
-    data: {},
+// 스케줄 배정용 직원 목록 조회 (admin endpoint 직접 호출, features 간 import 금지로 인해)
+export const getScheduleUserList = () =>
+  apiClient.get<{ items: ScheduleUserListItem[]; total: number }>({
+    url: '/api/admin/users',
+    params: { limit: 100 },
   });

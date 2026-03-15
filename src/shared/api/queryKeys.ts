@@ -26,16 +26,10 @@ export const QUERY_KEYS = {
     base: ['schedule'] as const,
     week: (year: number, week: number) =>
       [...QUERY_KEYS.schedule.base, 'week', year, week] as const,
-    overlap: (year: number, week: number) =>
-      [...QUERY_KEYS.schedule.base, 'overlap', year, week] as const,
     dayoffsBase: () => [...QUERY_KEYS.schedule.base, 'dayoffs'] as const,
     dayoffs: (status?: string) => [...QUERY_KEYS.schedule.base, 'dayoffs', 'list', status] as const,
-    myDayoffs: () => [...QUERY_KEYS.schedule.base, 'dayoffs', 'my'] as const,
-    adminDayoffs: () => [...QUERY_KEYS.schedule.base, 'dayoffs', 'admin'] as const,
     shiftsBase: () => [...QUERY_KEYS.schedule.base, 'shifts'] as const,
     shifts: () => [...QUERY_KEYS.schedule.base, 'shifts', 'list'] as const,
-    myShifts: () => [...QUERY_KEYS.schedule.base, 'shifts', 'my'] as const,
-    adminShifts: () => [...QUERY_KEYS.schedule.base, 'shifts', 'admin'] as const,
     users: () => [...QUERY_KEYS.schedule.base, 'users'] as const,
   },
 
@@ -51,7 +45,6 @@ export const QUERY_KEYS = {
     insuranceRates: () => [...QUERY_KEYS.admin.base, 'insurance-rates'] as const,
     insuranceRateByYear: (year: number) =>
       [...QUERY_KEYS.admin.base, 'insurance-rates', year] as const,
-    dashboard: (year: number, month: number) =>
-      [...QUERY_KEYS.admin.base, 'dashboard', year, month] as const,
+    currentDefaultWage: () => [...QUERY_KEYS.admin.base, 'default-wage', 'current'] as const,
   },
 } as const;

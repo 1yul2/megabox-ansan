@@ -5,16 +5,7 @@
  * - 엑셀 대량 업로드
  */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import {
-  Upload,
-  Download,
-  Calendar,
-  Users,
-  AlertCircle,
-  CheckCircle2,
-  Clock,
-  XCircle,
-} from 'lucide-react';
+import { Upload, Download, Calendar, Users, AlertCircle, CheckCircle2, Clock } from 'lucide-react';
 import { useState, useRef, Fragment } from 'react';
 import { toast } from 'sonner';
 
@@ -28,7 +19,6 @@ import {
   SelectValue,
 } from '@/shared/components/ui/select';
 import { cn } from '@/shared/lib/utils';
-import { useAuthStore } from '@/shared/model/authStore';
 
 // ── 타입 정의 ──────────────────────────────────────────────────────────────
 
@@ -138,10 +128,7 @@ function TableSkeleton() {
             <tr key={row} className="border-t border-gray-50">
               {Array.from({ length: 10 }).map((_, col) => (
                 <td key={col} className="px-4 py-3">
-                  <div
-                    className="h-3 rounded bg-gray-100 animate-pulse"
-                    style={{ width: `${50 + ((row + col) % 3) * 15}%` }}
-                  />
+                  <div className="h-3 rounded bg-gray-100 animate-pulse" style={{ width: `${50 + ((row + col) % 3) * 15}%` }} />
                 </td>
               ))}
             </tr>
@@ -168,21 +155,13 @@ function SubtotalRow({ records, colSpan }: SubtotalRowProps) {
     <tr className="border-t border-gray-200 bg-gray-50">
       <td colSpan={colSpan} className="px-4 py-2 text-xs text-gray-500 font-medium">
         <span className="inline-flex flex-wrap gap-3">
-          <span>
-            총 근무일 <strong className="text-gray-700">{totalDays}일</strong>
-          </span>
+          <span>총 근무일 <strong className="text-gray-700">{totalDays}일</strong></span>
           <span>·</span>
-          <span>
-            총 <strong className="text-mega">{totalH.toFixed(2)}h</strong>
-          </span>
+          <span>총 <strong className="text-mega">{totalH.toFixed(2)}h</strong></span>
           <span>·</span>
-          <span>
-            주간 <strong className="text-gray-700">{dayH.toFixed(2)}h</strong>
-          </span>
+          <span>주간 <strong className="text-gray-700">{dayH.toFixed(2)}h</strong></span>
           <span>·</span>
-          <span>
-            야간 <strong className="text-indigo-600">{nightH.toFixed(2)}h</strong>
-          </span>
+          <span>야간 <strong className="text-indigo-600">{nightH.toFixed(2)}h</strong></span>
         </span>
       </td>
     </tr>
@@ -203,25 +182,14 @@ export default function AttendanceManager() {
     queryFn: () => apiClient.get({ url: '/api/workstatus/admin/monthly', params: { year, month } }),
   });
 
-  const [uploadResult, setUploadResult] = useState<BulkImportResult | null>(null);
-
-  const { mutate: uploadExcel, isPending: isUploading } = useMutation<
-    BulkImportResult,
-    Error,
-    File
-  >({
+  const { mutate: uploadExcel, isPending: isUploading } = useMutation<BulkImportResult, Error, File>({
     mutationFn: async (file) => {
       const formData = new FormData();
       formData.append('file', file);
-      return apiClient.post({
-        url: '/api/workstatus/admin/bulk-import',
-        data: formData,
-        headers: { 'Content-Type': undefined },
-      });
+      return apiClient.post({ url: '/api/workstatus/admin/bulk-import', data: formData });
     },
     onSuccess: (result) => {
       void queryClient.invalidateQueries({ queryKey: ['attendance'] });
-      setUploadResult(result);
       if (result.error_count === 0) {
         toast.success(`${result.success_count}건 등록 완료`);
       } else {
@@ -234,7 +202,10 @@ export default function AttendanceManager() {
   // 이벤트 핸들러
   const handleDownloadTemplate = async () => {
     const baseUrl = (import.meta.env.VITE_BASE_URL as string | undefined) ?? '';
-    const token = useAuthStore.getState().accessToken;
+    const stored = JSON.parse(localStorage.getItem('auth-storage') ?? '{}') as {
+      state?: { accessToken?: string };
+    };
+    const token = stored.state?.accessToken;
     const res = await fetch(`${baseUrl}/api/workstatus/admin/template`, {
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -248,27 +219,9 @@ export default function AttendanceManager() {
     toast.success('양식 다운로드 완료');
   };
 
-  const MAX_FILE_SIZE_MB = 10;
-
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    // 파일 확장자 검증
-    if (!file.name.endsWith('.xlsx')) {
-      toast.error('.xlsx 파일만 업로드할 수 있습니다.');
-      e.target.value = '';
-      return;
-    }
-
-    // 파일 크기 검증
-    if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
-      toast.error(`파일 크기는 ${MAX_FILE_SIZE_MB}MB 이하만 가능합니다.`);
-      e.target.value = '';
-      return;
-    }
-
-    setUploadResult(null);
     uploadExcel(file);
     e.target.value = '';
   };
@@ -292,6 +245,7 @@ export default function AttendanceManager() {
 
   return (
     <div className="space-y-5">
+
       {/* ── 요약 카드 4개 ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <SummaryCard
@@ -322,7 +276,10 @@ export default function AttendanceManager() {
       <div className="flex flex-wrap gap-3 items-center justify-between">
         {/* 연도/월 선택 */}
         <div className="flex items-center gap-2 flex-wrap">
-          <Select value={String(year)} onValueChange={(v) => setYear(Number(v))}>
+          <Select
+            value={String(year)}
+            onValueChange={(v) => setYear(Number(v))}
+          >
             <SelectTrigger size="sm" className="w-[90px]">
               <SelectValue />
             </SelectTrigger>
@@ -335,7 +292,10 @@ export default function AttendanceManager() {
             </SelectContent>
           </Select>
 
-          <Select value={String(month)} onValueChange={(v) => setMonth(Number(v))}>
+          <Select
+            value={String(month)}
+            onValueChange={(v) => setMonth(Number(v))}
+          >
             <SelectTrigger size="sm" className="w-[80px]">
               <SelectValue />
             </SelectTrigger>
@@ -372,7 +332,7 @@ export default function AttendanceManager() {
           <input
             ref={fileInputRef}
             type="file"
-            accept=".xlsx"
+            accept=".xlsx,.xls"
             className="hidden"
             onChange={handleFileChange}
           />
@@ -382,46 +342,11 @@ export default function AttendanceManager() {
       {/* ── 안내 배너 ── */}
       <div className="flex items-start gap-3 p-3.5 rounded-xl bg-blue-50 border border-blue-100 text-sm text-blue-700">
         <AlertCircle className="size-4 mt-0.5 shrink-0" />
-        <div className="space-y-1">
-          <p>
-            엑셀 양식을 다운로드하여 근태 데이터를 입력 후 업로드하면 자동으로 등록됩니다.
-            <br />
-            같은 날짜의 기존 기록은 덮어씌워집니다.
-          </p>
-          <p className="text-xs text-blue-500">
-            날짜는 텍스트(2026-03-01) 또는 엑셀 날짜 서식 모두 지원합니다. 시간도 텍스트(09:00) 또는
-            또는 시간 서식 모두 지원합니다.
-            <br />
-            수식(=TODAY() 등)은 사용하지 마세요.
-          </p>
-        </div>
+        <p>
+          엑셀 양식을 다운로드하여 근태 데이터를 입력 후 업로드하면 자동으로 등록됩니다.
+          같은 날짜의 기존 기록은 덮어씌워집니다.
+        </p>
       </div>
-
-      {/* ── 업로드 결과 표시 ── */}
-      {uploadResult && uploadResult.error_count > 0 && (
-        <div className="rounded-xl border border-red-100 bg-red-50 p-4">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2 text-red-700 font-medium text-sm">
-              <XCircle className="size-4" />
-              <span>업로드 오류 {uploadResult.error_count}건</span>
-            </div>
-            <button
-              className="text-xs text-red-400 hover:text-red-600"
-              onClick={() => setUploadResult(null)}
-            >
-              닫기
-            </button>
-          </div>
-          <ul className="space-y-1 max-h-40 overflow-y-auto text-xs text-red-600">
-            {uploadResult.errors.map((err, i) => (
-              <li key={i} className="flex items-start gap-1.5">
-                <span className="shrink-0 mt-0.5 text-red-400">-</span>
-                <span>{err}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
 
       {/* ── 테이블 영역 ── */}
       {isLoading ? (
@@ -456,7 +381,8 @@ export default function AttendanceManager() {
 
                 return userRecords.map((r, idx) => {
                   const isComplete = !!r.check_out;
-                  const posColor = POSITION_COLOR[r.position ?? ''] ?? 'bg-gray-100 text-gray-600';
+                  const posColor =
+                    POSITION_COLOR[r.position ?? ''] ?? 'bg-gray-100 text-gray-600';
                   const checkIn = fmtTime(r.check_in);
                   const breakStart = fmtTime(r.break_start);
                   const breakEnd = fmtTime(r.break_end);
@@ -519,7 +445,9 @@ export default function AttendanceManager() {
                         {/* 휴식시작 */}
                         <td className="px-4 py-3 text-center font-mono text-xs">
                           <span
-                            className={cn(breakStart.missing ? 'text-gray-400' : 'text-amber-600')}
+                            className={cn(
+                              breakStart.missing ? 'text-gray-400' : 'text-amber-600',
+                            )}
                           >
                             {breakStart.missing ? '-' : breakStart.text}
                           </span>
@@ -528,7 +456,9 @@ export default function AttendanceManager() {
                         {/* 휴식종료 */}
                         <td className="px-4 py-3 text-center font-mono text-xs">
                           <span
-                            className={cn(breakEnd.missing ? 'text-gray-400' : 'text-amber-600')}
+                            className={cn(
+                              breakEnd.missing ? 'text-gray-400' : 'text-amber-600',
+                            )}
                           >
                             {breakEnd.missing ? '-' : breakEnd.text}
                           </span>
@@ -563,7 +493,12 @@ export default function AttendanceManager() {
                       </tr>
 
                       {/* 직원별 소계 행 — 마지막 행 다음에만 삽입 */}
-                      {isLastRow && <SubtotalRow records={userRecords} colSpan={colSpan} />}
+                      {isLastRow && (
+                        <SubtotalRow
+                          records={userRecords}
+                          colSpan={colSpan}
+                        />
+                      )}
                     </Fragment>
                   );
                 });

@@ -1,181 +1,174 @@
-import { Users2 } from 'lucide-react';
+import { Users } from 'lucide-react';
+
+import type { DayOverlapResponse, TimeSlotOverlap, WeekOverlapResponse } from '../model/type';
 
 import { formatDate, WEEKDAY_KO } from '../model/weekUtils';
 
-import type { WeekOverlapResponse } from '../model/type';
-
 import { cn } from '@/shared/lib/utils';
 
-interface TimeOverlapPanelProps {
-  overlapData?: WeekOverlapResponse;
-  weekDates: Date[];
-  isLoading?: boolean;
+const TIMELINE_START = 6 * 60;
+const TIMELINE_TOTAL = 18 * 60;
+
+function parseMinutes(t: string): number {
+  const parts = t.split(':');
+  return Number(parts[0]) * 60 + Number(parts[1] ?? 0);
 }
 
-// 근무 밀도에 따라 색상 계산
-function getDensityColor(count: number, max: number): string {
-  if (max === 0 || count === 0) return 'bg-gray-50';
-  const ratio = count / max;
-  if (ratio >= 0.8) return 'bg-mega/80 text-white';
-  if (ratio >= 0.6) return 'bg-mega/60 text-white';
-  if (ratio >= 0.4) return 'bg-mega/40 text-mega';
-  if (ratio >= 0.2) return 'bg-mega/20 text-mega';
-  return 'bg-mega/10 text-mega/70';
+function getSegmentColor(count: number): string {
+  if (count === 0) return '';
+  if (count === 1) return 'bg-emerald-400/80';
+  if (count <= 3) return 'bg-blue-400/80';
+  return 'bg-orange-400/80';
+}
+
+interface DensityBarProps {
+  dayData: DayOverlapResponse | undefined;
+  maxCount: number;
+}
+
+const DensityBar = ({ dayData }: DensityBarProps) => {
+  const slots = dayData?.slots ?? [];
+
+  if (slots.length === 0) {
+    return <div className="flex-1 h-5 bg-gray-100/80 rounded" />;
+  }
+
+  return (
+    <div className="relative flex-1 h-5 bg-gray-100/80 rounded overflow-hidden">
+      {slots.map((slot: TimeSlotOverlap, i: number) => {
+        const startMin = parseMinutes(slot.start_time);
+        const endMin = parseMinutes(slot.end_time);
+        const clampedStart = Math.max(startMin, TIMELINE_START);
+        const clampedEnd = Math.min(endMin, TIMELINE_START + TIMELINE_TOTAL);
+        if (clampedStart >= clampedEnd) return null;
+        const left = ((clampedStart - TIMELINE_START) / TIMELINE_TOTAL) * 100;
+        const width = ((clampedEnd - clampedStart) / TIMELINE_TOTAL) * 100;
+        const color = getSegmentColor(slot.count);
+        const employeeNames = slot.employees.map((e) => e.name).join(', ');
+
+        return (
+          <div
+            key={i}
+            className={cn('absolute h-full transition-opacity group', color)}
+            style={{ left: `${left}%`, width: `${width}%` }}
+            title={`${slot.start_time}~${slot.end_time}: ${slot.count}명 (${employeeNames})`}
+          >
+            {/* Hover count badge */}
+            <div className="hidden group-hover:flex absolute inset-0 items-center justify-center">
+              <span className="text-[8px] text-white font-bold">{slot.count}</span>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
+interface TimeOverlapPanelProps {
+  overlapData: WeekOverlapResponse | null | undefined;
+  weekDates: Date[];
+  isLoading?: boolean;
 }
 
 const TimeOverlapPanel = ({ overlapData, weekDates, isLoading }: TimeOverlapPanelProps) => {
   if (isLoading) {
     return (
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <div className="w-5 h-5 bg-gray-200 animate-pulse rounded" />
-          <div className="w-32 h-4 bg-gray-200 animate-pulse rounded" />
-        </div>
-        <div className="grid grid-cols-7 gap-2">
-          {Array.from({ length: 28 }).map((_, i) => (
-            <div key={i} className="h-8 bg-gray-100 animate-pulse rounded" />
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+        <div className="h-4 w-40 bg-gray-100 rounded animate-pulse mb-4" />
+        <div className="space-y-2">
+          {Array.from({ length: 7 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-3">
+              <div className="w-8 h-3 bg-gray-100 rounded animate-pulse" />
+              <div className="flex-1 h-5 bg-gray-100 rounded animate-pulse" />
+            </div>
           ))}
         </div>
       </div>
     );
   }
 
-  if (!overlapData?.days?.length) {
-    return null;
-  }
+  if (!overlapData || overlapData.days.length === 0) return null;
 
-  // 전체 최대 동시 근무자 수 계산
-  let globalMax = 0;
-  for (const day of overlapData.days) {
-    for (const slot of day.slots) {
-      if (slot.count > globalMax) globalMax = slot.count;
-    }
-  }
+  const dayMap = Object.fromEntries(overlapData.days.map((d) => [d.work_date, d]));
+  const maxCount = overlapData.days.reduce((max, d) => {
+    const dayMax = d.slots.reduce((m, s) => Math.max(m, s.count), 0);
+    return Math.max(max, dayMax);
+  }, 0);
 
-  // 날짜별 슬롯 맵핑
-  const dayMap = new Map<string, (typeof overlapData.days)[0]>();
-  for (const day of overlapData.days) {
-    dayMap.set(day.work_date, day);
-  }
-
-  // 모든 타임 슬롯 수집 (정렬)
-  const allSlots = new Set<string>();
-  for (const day of overlapData.days) {
-    for (const slot of day.slots) {
-      allSlots.add(slot.start_time);
-    }
-  }
-  const sortedSlots = Array.from(allSlots).sort();
-
-  if (sortedSlots.length === 0) return null;
+  // Time axis hour labels (6, 8, 10, ... 24)
+  const axisHours = [6, 8, 10, 12, 14, 16, 18, 20, 22, 24];
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
       {/* Header */}
-      <div className="px-6 py-4 border-b border-gray-50">
+      <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-xl bg-mega/10 flex items-center justify-center">
-            <Users2 className="size-4 text-mega" />
-          </div>
-          <div>
-            <h3 className="font-semibold text-sm text-gray-900">시간대별 근무 밀도</h3>
-            <p className="text-xs text-gray-400">동시 근무 인원수 히트맵</p>
-          </div>
+          <div className="w-1 h-4 rounded-full bg-mega-secondary" />
+          <p className="text-sm font-semibold text-gray-700">시간대별 근무 밀도</p>
+          <span className="text-xs text-gray-400 bg-gray-100 rounded-full px-2 py-0.5">
+            최대 {maxCount}명
+          </span>
         </div>
-      </div>
-
-      {/* Heatmap */}
-      <div className="p-4 overflow-x-auto">
-        <table className="w-full text-xs border-collapse">
-          <thead>
-            <tr>
-              <th className="w-16 py-2 text-gray-400 font-medium text-left pl-2">시간</th>
-              {weekDates.map((date, idx) => {
-                const isSat = idx === 5;
-                const isSun = idx === 6;
-                return (
-                  <th
-                    key={formatDate(date)}
-                    className={cn(
-                      'py-2 text-center font-semibold w-[calc((100%-4rem)/7)]',
-                      isSat ? 'text-blue-500' : isSun ? 'text-red-500' : 'text-gray-600',
-                    )}
-                  >
-                    <div>{WEEKDAY_KO[idx]}</div>
-                    <div className="text-[10px] font-normal text-gray-400">{date.getDate()}</div>
-                  </th>
-                );
-              })}
-            </tr>
-          </thead>
-          <tbody>
-            {sortedSlots.map((slotTime) => (
-              <tr key={slotTime}>
-                <td className="py-0.5 text-gray-400 font-medium pl-2">{slotTime.slice(0, 5)}</td>
-                {weekDates.map((date) => {
-                  const dateKey = formatDate(date);
-                  const dayData = dayMap.get(dateKey);
-                  const slot = dayData?.slots.find((s) => s.start_time === slotTime);
-                  const count = slot?.count ?? 0;
-                  const employees = slot?.employees ?? [];
-
-                  return (
-                    <td key={dateKey} className="py-0.5 px-0.5">
-                      <div
-                        className={cn(
-                          'relative group rounded-lg h-7 flex items-center justify-center text-[10px] font-semibold cursor-default transition-all',
-                          getDensityColor(count, globalMax),
-                        )}
-                        title={
-                          employees.length > 0
-                            ? employees.map((e) => e.name).join(', ')
-                            : '근무 없음'
-                        }
-                      >
-                        {count > 0 ? count : ''}
-
-                        {/* Tooltip */}
-                        {employees.length > 0 && (
-                          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 z-10 hidden group-hover:block pointer-events-none">
-                            <div className="bg-gray-900 text-white text-[10px] rounded-lg px-2.5 py-1.5 whitespace-nowrap shadow-xl">
-                              <div className="font-semibold mb-0.5 text-gray-300">
-                                {slotTime.slice(0, 5)} 동시 {count}명
-                              </div>
-                              {employees.map((emp) => (
-                                <div key={emp.user_id}>
-                                  {emp.name} <span className="text-gray-400">({emp.position})</span>
-                                </div>
-                              ))}
-                            </div>
-                            <div className="w-2 h-2 bg-gray-900 rotate-45 mx-auto -mt-1" />
-                          </div>
-                        )}
-                      </div>
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
-        {/* Legend */}
-        <div className="flex items-center gap-3 mt-3 pt-3 border-t border-gray-50">
-          <span className="text-[10px] text-gray-400 font-medium">밀도:</span>
+        <div className="flex items-center gap-3">
           {[
-            { label: '낮음', color: 'bg-mega/10' },
-            { label: '', color: 'bg-mega/30' },
-            { label: '', color: 'bg-mega/50' },
-            { label: '', color: 'bg-mega/70' },
-            { label: '높음', color: 'bg-mega/90' },
-          ].map((item, i) => (
-            <div key={i} className="flex items-center gap-1">
-              <div className={cn('w-3 h-3 rounded', item.color)} />
-              {item.label && <span className="text-[10px] text-gray-400">{item.label}</span>}
+            { label: '1명', className: 'bg-emerald-400/80' },
+            { label: '2-3명', className: 'bg-blue-400/80' },
+            { label: '4명+', className: 'bg-orange-400/80' },
+          ].map(({ label, className }) => (
+            <div key={label} className="flex items-center gap-1">
+              <div className={cn('w-4 h-2.5 rounded', className)} />
+              <span className="text-[10px] text-gray-500">{label}</span>
             </div>
           ))}
         </div>
       </div>
+
+      {/* Time axis */}
+      <div className="flex ml-12 mb-1">
+        <div className="relative flex-1 h-3">
+          {axisHours.map((h) => (
+            <span
+              key={h}
+              className="absolute text-[9px] text-gray-400 font-medium -translate-x-1/2"
+              style={{ left: `${((h - 6) / 18) * 100}%` }}
+            >
+              {h === 24 ? '' : `${h}`}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* Day rows */}
+      <div className="space-y-1.5">
+        {weekDates.map((date, idx) => {
+          const key = formatDate(date);
+          const dayData = dayMap[key];
+          const isSat = idx === 5;
+          const isSun = idx === 6;
+
+          return (
+            <div key={key} className="flex items-center gap-3">
+              <div className="flex items-center gap-1 w-12 shrink-0 justify-end">
+                <span
+                  className={cn(
+                    'text-[10px] font-semibold',
+                    isSat ? 'text-blue-500' : isSun ? 'text-red-500' : 'text-gray-500',
+                  )}
+                >
+                  {WEEKDAY_KO[idx]}
+                </span>
+              </div>
+              <DensityBar dayData={dayData} maxCount={maxCount} />
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Note */}
+      <p className="mt-3 text-[10px] text-gray-400 flex items-center gap-1">
+        <Users className="size-3" />
+        각 블록 위에 마우스를 올리면 근무 직원 정보를 확인할 수 있습니다.
+      </p>
     </div>
   );
 };

@@ -17,8 +17,7 @@ type DayCellProps = {
   day: number;
   dateKey: string;
   isToday: boolean;
-  isSaturday: boolean;
-  isSunday: boolean;
+  isWeekend: boolean;
   isCurrentMonth: boolean;
   shifts: ShiftType[];
 };
@@ -60,7 +59,7 @@ function buildCalendarDays(year: number, month: number): (number | null)[] {
   const startOffset = firstDow === 0 ? 6 : firstDow - 1;
   const daysInMonth = new Date(year, month, 0).getDate();
 
-  const cells: (number | null)[] = Array<number | null>(42).fill(null);
+  const cells: (number | null)[] = Array(42).fill(null);
   for (let d = 1; d <= daysInMonth; d++) {
     cells[startOffset + d - 1] = d;
   }
@@ -75,7 +74,7 @@ function toDateKey(year: number, month: number, day: number): string {
 // ── DayCell ────────────────────────────────────────────────────────────────
 
 const DayCell = React.memo(
-  ({ day, dateKey, isToday, isSaturday, isSunday, isCurrentMonth, shifts }: DayCellProps) => {
+  ({ day, dateKey, isToday, isWeekend, isCurrentMonth, shifts }: DayCellProps) => {
     if (!isCurrentMonth) {
       return <div aria-hidden="true" />;
     }
@@ -92,7 +91,8 @@ const DayCell = React.memo(
           'min-h-[44px] md:min-h-[52px] rounded-lg pt-1.5 pb-1 px-0.5',
           'transition-colors duration-100',
           hasShift && !isToday && 'bg-gray-50',
-          isToday && 'bg-mega-secondary/10 ring-1 ring-mega-secondary ring-inset',
+          isToday &&
+            'bg-mega-secondary/10 ring-1 ring-mega-secondary ring-inset',
         )}
       >
         {/* 날짜 숫자 */}
@@ -100,9 +100,8 @@ const DayCell = React.memo(
           className={cn(
             'text-xs md:text-sm leading-none select-none',
             isToday && 'font-bold text-mega-secondary',
-            !isToday && isSaturday && 'text-blue-500',
-            !isToday && isSunday && 'text-red-400',
-            !isToday && !isSaturday && !isSunday && 'text-gray-700',
+            !isToday && isWeekend && 'text-red-400',
+            !isToday && !isWeekend && 'text-gray-700',
           )}
         >
           {day}
@@ -115,7 +114,11 @@ const DayCell = React.memo(
               <span
                 key={shift}
                 aria-label={SHIFT_LABEL[shift]}
-                className={cn('block rounded-full', 'w-1.5 h-1.5 md:w-2 md:h-2', SHIFT_DOT[shift])}
+                className={cn(
+                  'block rounded-full',
+                  'w-1.5 h-1.5 md:w-2 md:h-2',
+                  SHIFT_DOT[shift],
+                )}
               />
             ))}
           </div>
@@ -142,7 +145,7 @@ function CalendarSkeleton() {
       {Array.from({ length: 6 }).map((_, row) => (
         <div key={row} className="grid grid-cols-7 gap-1">
           {Array.from({ length: 7 }).map((_, col) => (
-            <div key={col} className="h-11 md:h-[52px] rounded-lg bg-gray-100" />
+            <div key={col} className="h-[44px] md:h-[52px] rounded-lg bg-gray-100" />
           ))}
         </div>
       ))}
@@ -252,9 +255,7 @@ const UserCalendar = ({ scheduleMap, isLoading = false }: UserCalendarProps) => 
                 key={d}
                 className={cn(
                   'text-center text-[11px] font-medium py-1 select-none',
-                  idx === 5 && 'text-blue-500',
-                  idx === 6 && 'text-red-400',
-                  idx < 5 && 'text-gray-400',
+                  idx >= 5 ? 'text-red-400' : 'text-gray-400',
                 )}
               >
                 {d}
@@ -273,10 +274,9 @@ const UserCalendar = ({ scheduleMap, isLoading = false }: UserCalendarProps) => 
               const schedulesOnDay = scheduleMap.get(dateKey) ?? [];
               const shifts = schedulesOnDay.map((s) => getShiftType(s.start_time));
 
-              // 그리드 내 열 인덱스 (0=월 ... 5=토 ... 6=일)
+              // 그리드 내 열 인덱스 (0=월 ... 6=일)
               const colIdx = idx % 7;
-              const isSaturday = colIdx === 5;
-              const isSunday = colIdx === 6;
+              const isWeekend = colIdx >= 5;
 
               return (
                 <DayCell
@@ -284,8 +284,7 @@ const UserCalendar = ({ scheduleMap, isLoading = false }: UserCalendarProps) => 
                   day={day}
                   dateKey={dateKey}
                   isToday={dateKey === todayKey}
-                  isSaturday={isSaturday}
-                  isSunday={isSunday}
+                  isWeekend={isWeekend}
                   isCurrentMonth={true}
                   shifts={shifts}
                 />

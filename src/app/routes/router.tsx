@@ -6,7 +6,6 @@ import PublicLayout from '../layouts/PublicLayout';
 import SystemLayOut from '../layouts/SystemLayOut';
 
 import { AuthRoute } from './AuthRoute';
-import HomeRoute from './HomeRoute';
 
 import { NotFoundPage } from '@/pages/404';
 import { AdminPage } from '@/pages/admin';
@@ -22,6 +21,7 @@ import {
   ShiftDetailPage,
 } from '@/pages/community';
 import CommunityPage from '@/pages/community/ui/CommunityPage';
+import { HomePage } from '@/pages/home';
 import { LoginPage } from '@/pages/login';
 import PayPage from '@/pages/payroll/PayPage';
 import { SchedulePage } from '@/pages/schedule';
@@ -74,7 +74,7 @@ export const router = createBrowserRouter([
     children: [
       {
         index: true,
-        element: <HomeRoute />,
+        element: <HomePage />,
       },
       {
         path: ROUTES.PAY,
