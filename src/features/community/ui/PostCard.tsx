@@ -6,6 +6,7 @@ import { formatRelativeTime } from '../model/formatData';
 import type { CommunityPostDTO } from '../api/dto';
 
 import { ROLE_STYLES } from '@/entities/user/model/role';
+import { UserProfileTrigger } from '@/entities/user/ui/UserProfileCard';
 import { getAvatarSrc, getUploadUrl } from '@/shared/lib/avatar';
 import { cn } from '@/shared/lib/utils';
 
@@ -136,17 +137,26 @@ export const PostCard = memo(({ post, onClick, showCategory = true }: PostCardPr
         {/* 하단: 작성자 + 통계 */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 min-w-0">
-            {/* 아바타 */}
-            <div className="flex items-center justify-center w-6 h-6 rounded-full bg-mega-secondary/10 shrink-0 overflow-hidden">
-              {profileImageUrl ? (
-                <img src={profileImageUrl} alt={post.author_name} className="w-full h-full object-cover" />
-              ) : (
-                <span className="text-[10px] font-bold text-mega-secondary">
-                  {post.author_name.charAt(0)}
-                </span>
-              )}
-            </div>
-            <span className="text-xs font-medium text-gray-700 truncate">{post.author_name}</span>
+            {/* 아바타 + 이름 → 클릭 시 프로필 카드 */}
+            <UserProfileTrigger
+              userId={post.author_id}
+              name={post.author_name}
+              profileImage={post.author_profile_image}
+              gender={post.author_gender}
+              position={post.author_position}
+              className="gap-2"
+            >
+              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-mega-secondary/10 shrink-0 overflow-hidden">
+                {profileImageUrl ? (
+                  <img src={profileImageUrl} alt={post.author_name} className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-[10px] font-bold text-mega-secondary">
+                    {post.author_name.charAt(0)}
+                  </span>
+                )}
+              </span>
+              <span className="text-xs font-medium text-gray-700 truncate">{post.author_name}</span>
+            </UserProfileTrigger>
             {post.author_position && (
               <>
                 <span className="text-gray-300 text-xs shrink-0">·</span>

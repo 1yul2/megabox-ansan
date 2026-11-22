@@ -60,6 +60,8 @@ import {
   purgeUser,
   sendAdminBroadcast,
   getBroadcastContacts,
+  uploadAdminUserAvatar,
+  deleteAdminUserAvatar,
 } from './service';
 
 import type {
@@ -677,6 +679,45 @@ export function useSendBroadcastMutation() {
       toast.success(
         res.recipient_count > 1 ? `${res.recipient_count}명에게 발송했습니다.` : '발송했습니다.',
       );
+    },
+  });
+}
+
+// ─── 관리자: 직원 프로필 이미지 ───────────────────────────────────────────────
+
+// interceptors.ts가 서버 에러를 ApiError(message)로 변환하므로 message를 우선 사용
+const getErrorDetail = (error: unknown, fallback: string): string => {
+  if (error instanceof Error && error.message) return error.message;
+  return fallback;
+};
+
+export function useUploadAdminUserAvatarMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ memberId, file }: { memberId: number; file: File }) =>
+      uploadAdminUserAvatar(memberId, file),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ADMIN_QUERY_KEYS.usersBase() });
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.mypage.profile() });
+      toast.success('프로필 사진이 변경되었습니다.');
+    },
+    onError: (error) => {
+      toast.error(getErrorDetail(error, '프로필 사진 변경에 실패했습니다.'));
+    },
+  });
+}
+
+export function useDeleteAdminUserAvatarMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (memberId: number) => deleteAdminUserAvatar(memberId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ADMIN_QUERY_KEYS.usersBase() });
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.mypage.profile() });
+      toast.success('기본 프로필로 변경되었습니다.');
+    },
+    onError: (error) => {
+      toast.error(getErrorDetail(error, '프로필 사진 삭제에 실패했습니다.'));
     },
   });
 }

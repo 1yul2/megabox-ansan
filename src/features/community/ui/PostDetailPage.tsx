@@ -68,6 +68,7 @@ import { PostEditor } from './PostEditor';
 
 import { useUserQuery } from '@/entities/user/api/queries';
 import { hasAdminAccess, ROLE_STYLES } from '@/entities/user/model/role';
+import { UserProfileTrigger } from '@/entities/user/ui/UserProfileCard';
 import { Button } from '@/shared/components/ui/button';
 import { getAvatarSrc, getUploadUrl } from '@/shared/lib/avatar';
 import {
@@ -247,16 +248,25 @@ export function PostDetailPage({ postId, canWrite = true, fixedCategory }: PostD
 
               {/* 작성자 정보 */}
               <div className="flex items-center gap-2 flex-wrap">
-                <div className="flex items-center justify-center w-7 h-7 rounded-full bg-mega-secondary/10 shrink-0 overflow-hidden">
-                  {profileImageUrl ? (
-                    <img src={profileImageUrl} alt={post.author_name} className="w-full h-full object-cover" />
-                  ) : (
-                    <span className="text-xs font-bold text-mega-secondary">
-                      {post.author_name.charAt(0)}
-                    </span>
-                  )}
-                </div>
-                <span className="text-sm font-medium text-gray-800">{post.author_name}</span>
+                <UserProfileTrigger
+                  userId={post.author_id}
+                  name={post.author_name}
+                  profileImage={post.author_profile_image}
+                  gender={post.author_gender}
+                  position={post.author_position}
+                  className="gap-2"
+                >
+                  <span className="flex items-center justify-center w-7 h-7 rounded-full bg-mega-secondary/10 shrink-0 overflow-hidden">
+                    {profileImageUrl ? (
+                      <img src={profileImageUrl} alt={post.author_name} className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-xs font-bold text-mega-secondary">
+                        {post.author_name.charAt(0)}
+                      </span>
+                    )}
+                  </span>
+                  <span className="text-sm font-medium text-gray-800">{post.author_name}</span>
+                </UserProfileTrigger>
                 {post.author_position && (
                   <span
                     className={cn(

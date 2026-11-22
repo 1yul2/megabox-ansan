@@ -158,6 +158,9 @@ export function WorkStatusPanel() {
 
   const currentStatus: WorkCurrentStatus = deriveCurrentStatus(todayRecord);
   const statusMeta = STATUS_COLORS[currentStatus];
+  const selectedAvatarUrl = selectedEmployee
+    ? getAvatarSrc(selectedEmployee.profile_image, selectedEmployee.gender)
+    : undefined;
 
   const { mutate: doAction, isPending: isSubmitting } = useWorkStatusActionMutation();
 
@@ -213,8 +216,9 @@ export function WorkStatusPanel() {
       </header>
 
       {/* ── 2컬럼 메인 ── */}
-      <div className="flex-1 min-h-0 max-w-6xl mx-auto w-full px-4 py-4">
-        <div className="h-full grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-4">
+      {/* 모바일·태블릿: 프로필이 커져도 잘리지 않도록 세로 스크롤 / 데스크탑: 기존 고정 높이 레이아웃 */}
+      <div className="flex-1 min-h-0 max-w-6xl mx-auto w-full px-4 py-4 overflow-y-auto overscroll-contain lg:overflow-hidden">
+        <div className="lg:h-full grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-4">
 
           {/* ── LEFT: 근태 관리 ── */}
           <div className="flex flex-col gap-3 min-h-0">
@@ -227,36 +231,40 @@ export function WorkStatusPanel() {
 
             {/* 직원 정보 or 플레이스홀더 */}
             {selectedEmployee ? (
-              <section className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 shrink-0">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-mega-secondary/10 shrink-0 overflow-hidden">
-                      {getAvatarSrc(selectedEmployee.profile_image, selectedEmployee.gender) ? (
-                        <img
-                          src={getAvatarSrc(
-                            selectedEmployee.profile_image,
-                            selectedEmployee.gender,
-                          )}
-                          alt={selectedEmployee.name}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <span className="text-lg font-bold text-mega-secondary">
-                          {selectedEmployee.name.charAt(0)}
-                        </span>
-                      )}
-                    </div>
-                    <div>
-                      <p className="text-lg font-bold text-gray-900">{selectedEmployee.name}</p>
-                      <p className="text-xs text-gray-500">
-                        {POSITION_LABEL[selectedEmployee.position] ?? selectedEmployee.position}
-                      </p>
-                    </div>
+              <section className="bg-white rounded-2xl border border-gray-100 shadow-sm px-4 py-5 shrink-0">
+                {/* 선택 직원 프로필 — 큰 사진 + 아래 이름 */}
+                <div className="flex flex-col items-center text-center">
+                  <div className="flex items-center justify-center size-28 sm:size-32 xl:size-36 rounded-full bg-mega-secondary/10 ring-4 ring-mega-secondary/10 shadow-md shrink-0 overflow-hidden">
+                    {selectedAvatarUrl ? (
+                      <img
+                        key={selectedEmployee.id}
+                        src={selectedAvatarUrl}
+                        alt={selectedEmployee.name}
+                        className="size-full object-cover animate-in fade-in zoom-in-95 duration-200"
+                      />
+                    ) : (
+                      <span className="text-4xl sm:text-5xl font-bold text-mega-secondary">
+                        {selectedEmployee.name.charAt(0)}
+                      </span>
+                    )}
                   </div>
-                  <div className={cn('flex items-center gap-2 px-3 py-1.5 rounded-xl', statusMeta.bg)}>
-                    <span className={cn('size-2 rounded-full shrink-0', statusMeta.dot)} />
-                    <span className={cn('text-xs font-semibold', statusMeta.text)}>
-                      {STATUS_LABELS[currentStatus]}
+                  <p className="mt-3 text-2xl sm:text-3xl font-bold text-gray-900 leading-tight break-keep">
+                    {selectedEmployee.name}
+                  </p>
+                  <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
+                    <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2.5 py-1 rounded-lg">
+                      {POSITION_LABEL[selectedEmployee.position] ?? selectedEmployee.position}
+                    </span>
+                    <span
+                      className={cn(
+                        'flex items-center gap-1.5 px-2.5 py-1 rounded-lg',
+                        statusMeta.bg,
+                      )}
+                    >
+                      <span className={cn('size-2 rounded-full shrink-0', statusMeta.dot)} />
+                      <span className={cn('text-xs font-semibold', statusMeta.text)}>
+                        {STATUS_LABELS[currentStatus]}
+                      </span>
                     </span>
                   </div>
                 </div>

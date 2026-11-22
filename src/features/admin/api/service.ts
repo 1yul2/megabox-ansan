@@ -46,6 +46,7 @@
   AdminBroadcastRequestDTO,
   AdminBroadcastResponseDTO,
   BroadcastContactDTO,
+  AdminAvatarResponseDTO,
 } from './dto';
 
 import { apiClient, axiosInstance } from '@/shared/api/apiClients';
@@ -253,3 +254,15 @@ export const sendAdminBroadcast = (data: AdminBroadcastRequestDTO) =>
 // 수신자 선택용 직원 목록 (쪽지 수신 가능 대상과 동일)
 export const getBroadcastContacts = () =>
   apiClient.get<BroadcastContactDTO[]>({ url: '/api/message/users/contacts' });
+
+// 관리자: 직원 프로필 이미지 변경/삭제
+// interceptors.ts의 multipart/form-data 변환 로직 활용 (data 객체 → FormData 자동 변환)
+export const uploadAdminUserAvatar = (memberId: number, file: File) =>
+  apiClient.post<AdminAvatarResponseDTO>({
+    url: `/api/admin/users/${memberId}/avatar`,
+    data: { file },
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+
+export const deleteAdminUserAvatar = (memberId: number) =>
+  apiClient.delete<AdminAvatarResponseDTO>({ url: `/api/admin/users/${memberId}/avatar` });

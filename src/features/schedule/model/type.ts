@@ -28,6 +28,8 @@ export interface ScheduleResponse {
   user_name: string;
   user_position: string;
   user_hire_date: string | null; // YYYY-MM-DD
+  user_gender?: string | null;
+  user_profile_image?: string | null;
   work_date: string; // YYYY-MM-DD
   start_time: string; // HH:MM
   end_time: string; // HH:MM

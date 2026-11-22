@@ -5,6 +5,7 @@ import type { ScheduleResponse } from '../model/type';
 
 import { getPositionBlockSolid } from '@/entities/user/model/position';
 import ConfirmDialog from '@/shared/components/ui/confirm-dialog';
+import { getAvatarSrc } from '@/shared/lib/avatar';
 import { cn } from '@/shared/lib/utils';
 
 const TIMELINE_START = 6 * 60; // 360 min
@@ -53,6 +54,7 @@ const ScheduleCard = ({
   const leftPct = GAP + col * (colWidth + GAP);
 
   const style = getPositionBlockSolid(schedule.user_position);
+  const avatarUrl = getAvatarSrc(schedule.user_profile_image, schedule.user_gender);
 
   return (
     <>
@@ -76,8 +78,21 @@ const ScheduleCard = ({
         onMouseLeave={() => setHovered(false)}
       >
         <div className="px-1.5 py-0.5 h-full flex flex-col justify-start">
-          <p className={cn('text-[10px] font-bold leading-tight truncate', style.text)}>
-            {schedule.user_name}
+          <p
+            className={cn(
+              'flex items-center gap-0.5 min-w-0 text-[10px] font-bold leading-tight',
+              style.text,
+            )}
+          >
+            {/* 프로필 아이콘 — 이름 줄 높이(≈12px) 안에 맞춰 카드 크기 유지 */}
+            <span className="flex items-center justify-center size-3 rounded-full bg-white/30 shrink-0 overflow-hidden">
+              {avatarUrl ? (
+                <img src={avatarUrl} alt="" loading="lazy" className="size-full object-cover" />
+              ) : (
+                <span className="text-[7px] leading-none">{schedule.user_name.charAt(0)}</span>
+              )}
+            </span>
+            <span className="truncate">{schedule.user_name}</span>
           </p>
           {height >= 38 && (
             <p className={cn('text-[9px] leading-tight opacity-80 truncate', style.text)}>

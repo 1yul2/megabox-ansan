@@ -454,3 +454,9 @@ export interface BroadcastContactDTO {
   name: string;
   position: string;
 }
+
+// 관리자 직원 프로필 이미지 변경/삭제 응답
+export interface AdminAvatarResponseDTO {
+  id: number;
+  profile_image: string | null;
+}

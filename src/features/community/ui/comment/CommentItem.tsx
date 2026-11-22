@@ -6,6 +6,7 @@ import { formatRelativeTime } from '../../model/formatData';
 import type { CommentDTO } from '../../api/dto';
 
 import { ROLE_STYLES } from '@/entities/user/model/role';
+import { UserProfileTrigger } from '@/entities/user/ui/UserProfileCard';
 import { Button } from '@/shared/components/ui/button';
 import { getAvatarSrc } from '@/shared/lib/avatar';
 import {
@@ -79,21 +80,38 @@ export const CommentItem = memo(
         )}
       >
         {/* 아바타 */}
-        <div className="flex items-center justify-center w-8 h-8 rounded-full bg-mega-secondary/10 shrink-0 mt-0.5 overflow-hidden">
-          {profileImageUrl ? (
-            <img src={profileImageUrl} alt={comment.author_name} className="w-full h-full object-cover" />
-          ) : (
-            <span className="text-xs font-bold text-mega-secondary">
-              {comment.author_name.charAt(0)}
-            </span>
-          )}
-        </div>
+        <UserProfileTrigger
+          userId={comment.author_id}
+          name={comment.author_name}
+          profileImage={comment.author_profile_image}
+          gender={comment.author_gender}
+          position={comment.author_position}
+          className="self-start shrink-0 mt-0.5 rounded-full"
+        >
+          <span className="flex items-center justify-center w-8 h-8 rounded-full bg-mega-secondary/10 overflow-hidden">
+            {profileImageUrl ? (
+              <img src={profileImageUrl} alt={comment.author_name} className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-xs font-bold text-mega-secondary">
+                {comment.author_name.charAt(0)}
+              </span>
+            )}
+          </span>
+        </UserProfileTrigger>
 
         {/* 본문 */}
         <div className="flex-1 min-w-0">
           {/* 작성자 + 시간 */}
           <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-            <span className="text-xs font-semibold text-gray-800">{comment.author_name}</span>
+            <UserProfileTrigger
+              userId={comment.author_id}
+              name={comment.author_name}
+              profileImage={comment.author_profile_image}
+              gender={comment.author_gender}
+              position={comment.author_position}
+            >
+              <span className="text-xs font-semibold text-gray-800">{comment.author_name}</span>
+            </UserProfileTrigger>
             {comment.author_position && (
               <span
                 className={cn(

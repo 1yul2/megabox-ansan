@@ -6,6 +6,7 @@ import type { ScheduleResponse, UnavailableTimes } from '@/features/schedule/mod
 import { formatDate, WEEKDAY_KO } from '@/features/schedule/model/weekUtils';
 import { getPositionBadgeStyle, getPositionBgColor } from '@/entities/user/model/position';
 import ConfirmDialog from '@/shared/components/ui/confirm-dialog';
+import { getAvatarSrc } from '@/shared/lib/avatar';
 import { cn } from '@/shared/lib/utils';
 
 // ─── 데이터 변환 ──────────────────────────────────────────
@@ -23,6 +24,7 @@ type RosterRow = {
   userName: string;
   userPosition: string;
   userHireDate: string | null;
+  userAvatarUrl: string | undefined;
   schedulesByDate: Record<string, ScheduleResponse[]>;
 };
 
@@ -35,6 +37,7 @@ function buildRosterRows(schedules: ScheduleResponse[]): RosterRow[] {
         userName: s.user_name,
         userPosition: s.user_position,
         userHireDate: s.user_hire_date,
+        userAvatarUrl: getAvatarSrc(s.user_profile_image, s.user_gender),
         schedulesByDate: {},
       });
     }
@@ -236,7 +239,7 @@ const RosterView = ({
           <thead>
             <tr className="bg-gray-50/70 border-b border-gray-100">
               {/* 이름 열 헤더 */}
-              <th className="sticky left-0 z-10 bg-gray-50/70 border-r border-gray-100 w-[110px] px-3 py-3 text-left">
+              <th className="sticky left-0 z-10 bg-gray-50/70 border-r border-gray-100 w-[110px] px-2 py-3 text-left">
                 <span className="text-[11px] font-semibold text-gray-400">직원</span>
               </th>
 
@@ -330,8 +333,8 @@ const RosterView = ({
                   className="border-b border-gray-50 last:border-b-0 hover:bg-gray-50/40 transition-colors"
                 >
                   {/* 이름 셀 - sticky */}
-                  <td className="sticky left-0 bg-white border-r border-gray-100 px-3 py-2 z-10">
-                    <div className="flex items-center gap-1.5 min-w-0">
+                  <td className="sticky left-0 bg-white border-r border-gray-100 px-2 py-2 z-10">
+                    <div className="flex items-center gap-1 min-w-0">
                       <span
                         className={cn(
                           'text-[9px] px-1.5 py-0.5 rounded-full border font-medium whitespace-nowrap shrink-0',
@@ -339,6 +342,21 @@ const RosterView = ({
                         )}
                       >
                         {row.userPosition}
+                      </span>
+                      {/* 프로필 아이콘 — 행 높이를 키우지 않도록 배지와 동일한 높이(16px) */}
+                      <span className="flex items-center justify-center size-4 rounded-full bg-mega-secondary/10 shrink-0 overflow-hidden">
+                        {row.userAvatarUrl ? (
+                          <img
+                            src={row.userAvatarUrl}
+                            alt=""
+                            loading="lazy"
+                            className="size-full object-cover"
+                          />
+                        ) : (
+                          <span className="text-[8px] font-bold text-mega-secondary leading-none">
+                            {row.userName.charAt(0)}
+                          </span>
+                        )}
                       </span>
                       <span className="text-[12px] font-semibold text-gray-800 truncate">
                         {row.userName}

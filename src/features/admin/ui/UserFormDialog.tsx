@@ -13,6 +13,7 @@ import {
   POSITION_OPTIONS,
   userFormSchema,
 } from '../model/user.schema';
+import AdminAvatarEditor from './AdminAvatarEditor';
 
 import type {
   AdminUserDTO,
@@ -228,6 +229,9 @@ const UserFormDialog = ({
 
             {/* ── 기본정보 탭 ── */}
             <TabsContent value="basic" className="space-y-4">
+              {/* 프로필 사진 (수정 전용) */}
+              {!isCreate && user && <AdminAvatarEditor user={user} />}
+
               {/* 계정 정보 (생성 전용) */}
               {isCreate && (
                 <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-3">
