@@ -76,7 +76,7 @@ export function buildRows(messages: ChatMessageDTO[], myId: number | undefined):
     const next = messages[i + 1];
     const continues = (a: ChatMessageDTO | undefined, b: ChatMessageDTO) =>
       !!a &&
-      a.message_type === 'text' &&
+      a.message_type !== 'system' &&
       a.sender?.id === b.sender?.id &&
       sameDay(parseChatDate(a.created_at), parseChatDate(b.created_at)) &&
       Math.abs(parseChatDate(b.created_at).getTime() - parseChatDate(a.created_at).getTime()) <

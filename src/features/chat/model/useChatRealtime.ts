@@ -1,7 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useSyncExternalStore } from 'react';
 
-import { markMessageDeleted, updateMemberRead, upsertMessage } from './cache';
+import { markMessageDeleted, patchMessage, updateMemberRead, upsertMessage } from './cache';
 import { chatSocket } from './chatSocket';
 import { useTypingStore } from './typingStore';
 
@@ -48,6 +48,18 @@ export function useChatRealtime(enabled: boolean) {
           }
           refreshLists();
           break;
+        case 'message:updated': {
+          // 수정은 이미 불러온 메시지에만 반영 (목록에 없는 오래된 메시지를 끝에 붙이지 않음)
+          const updated = event.message;
+          patchMessage(
+            qc,
+            event.room_id,
+            (m) => m.id === updated.id,
+            () => updated,
+          );
+          refreshLists();
+          break;
+        }
         case 'message:deleted':
           markMessageDeleted(qc, event.room_id, event.message_id);
           refreshLists();

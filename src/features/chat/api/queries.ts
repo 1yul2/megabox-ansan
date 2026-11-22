@@ -8,6 +8,7 @@ import {
 import { toast } from 'sonner';
 
 import { patchMessage, upsertMessage, markMessageDeleted, sortRooms } from '../model/cache';
+import { prepareImage } from '../model/image';
 
 import { chatService } from './service';
 
@@ -233,5 +234,103 @@ export function useChatPinMutation() {
     onSettled: () => {
       void qc.invalidateQueries({ queryKey: QUERY_KEYS.chat.rooms() });
     },
+  });
+}
+
+/** 이미지 전송 — 압축 후 업로드, 업로드 동안 로컬 미리보기 말풍선 표시 */
+export function useSendChatImageMutation(roomId: number, me: User | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ file, clientId }: { file: File; clientId: string }) => {
+      const prepared = await prepareImage(file);
+      return chatService.sendImage(roomId, prepared.blob, prepared.fileName, clientId);
+    },
+    onMutate: ({ file, clientId }) => {
+      if (!me) return;
+      const temp: ChatMessageDTO = {
+        id: -Date.now() - Math.floor(Math.random() * 1000),
+        room_id: roomId,
+        sender: { id: Number(me.id), name: me.name, position: me.position },
+        message_type: 'image',
+        content: '',
+        is_deleted: false,
+        created_at: new Date().toISOString(),
+        client_id: clientId,
+        _status: 'sending',
+        _localUrl: URL.createObjectURL(file),
+        _file: file,
+      };
+      upsertMessage(qc, roomId, temp);
+      return { localUrl: temp._localUrl };
+    },
+    onSuccess: (message, _v, ctx) => {
+      upsertMessage(qc, roomId, message);
+      // 서버 이미지로 교체된 뒤 로컬 미리보기 메모리 해제
+      const url = ctx?.localUrl;
+      if (url) setTimeout(() => URL.revokeObjectURL(url), 10_000);
+      void qc.invalidateQueries({ queryKey: QUERY_KEYS.chat.rooms() });
+    },
+    onError: (e, { clientId }) => {
+      patchMessage(
+        qc,
+        roomId,
+        (m) => m.client_id === clientId && m.id < 0,
+        (m) => ({ ...m, _status: 'failed' }),
+      );
+      toast.error(errorMessage(e, '사진을 보내지 못했습니다.'));
+    },
+  });
+}
+
+/** 메시지 수정 — 즉시 반영, 실패 시 되돌림 */
+export function useEditChatMessageMutation(roomId: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ messageId, content }: { messageId: number; content: string }) =>
+      chatService.editMessage(roomId, messageId, content),
+    onMutate: ({ messageId, content }) => {
+      let previous: ChatMessageDTO | undefined;
+      patchMessage(
+        qc,
+        roomId,
+        (m) => m.id === messageId,
+        (m) => {
+          previous = m;
+          return { ...m, content, is_edited: true };
+        },
+      );
+      return { previous };
+    },
+    onSuccess: (message) => {
+      patchMessage(
+        qc,
+        roomId,
+        (m) => m.id === message.id,
+        () => message,
+      );
+      void qc.invalidateQueries({ queryKey: QUERY_KEYS.chat.rooms() });
+    },
+    onError: (e, { messageId }, ctx) => {
+      if (ctx?.previous) {
+        const prev = ctx.previous;
+        patchMessage(
+          qc,
+          roomId,
+          (m) => m.id === messageId,
+          () => prev,
+        );
+      }
+      toast.error(errorMessage(e, '메시지를 수정하지 못했습니다.'));
+    },
+  });
+}
+
+/** 수정 이력 (최고 관리자 전용) */
+export function useChatMessageHistoryQuery(roomId: number, messageId: number | null) {
+  return useQuery({
+    queryKey: [...QUERY_KEYS.chat.messages(roomId), 'history', messageId],
+    queryFn: () => chatService.messageHistory(roomId, messageId as number),
+    enabled: messageId != null && messageId > 0,
+    staleTime: 0,
   });
 }

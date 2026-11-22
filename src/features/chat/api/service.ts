@@ -1,5 +1,6 @@
 import type {
   ChatMessageDTO,
+  ChatMessageHistoryDTO,
   ChatMessagePageDTO,
   ChatRoomDetailDTO,
   ChatRoomSummaryDTO,
@@ -49,6 +50,26 @@ export const chatService = {
 
   send: (roomId: number, data: SendChatMessageDTO) =>
     apiClient.post<ChatMessageDTO>({ url: `${BASE}/rooms/${roomId}/messages`, data }),
+
+  // interceptors.ts 의 multipart 변환 로직 사용 (data 객체 → FormData)
+  sendImage: (roomId: number, file: Blob, fileName: string, clientId: string) =>
+    apiClient.post<ChatMessageDTO>({
+      url: `${BASE}/rooms/${roomId}/images`,
+      data: { file: new File([file], fileName, { type: file.type }), client_id: clientId },
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 60_000, // 모바일 네트워크에서 업로드가 기본 5초를 넘길 수 있음
+    }),
+
+  editMessage: (roomId: number, messageId: number, content: string) =>
+    apiClient.patch<ChatMessageDTO>({
+      url: `${BASE}/rooms/${roomId}/messages/${messageId}`,
+      data: { content },
+    }),
+
+  messageHistory: (roomId: number, messageId: number) =>
+    apiClient.get<ChatMessageHistoryDTO>({
+      url: `${BASE}/rooms/${roomId}/messages/${messageId}/history`,
+    }),
 
   deleteMessage: (roomId: number, messageId: number) =>
     apiClient.delete<{ success: boolean }>({

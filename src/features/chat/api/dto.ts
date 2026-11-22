@@ -11,7 +11,7 @@ export interface ChatMemberDTO extends ChatUserDTO {
   is_owner: boolean;
 }
 
-export type ChatMessageType = 'text' | 'system';
+export type ChatMessageType = 'text' | 'image' | 'system';
 
 export interface ChatMessageDTO {
   id: number;
@@ -22,8 +22,28 @@ export interface ChatMessageDTO {
   is_deleted: boolean;
   created_at: string; // ISO (KST, offset 없음)
   client_id?: string | null;
+  attachment_url?: string | null;
+  attachment_width?: number | null;
+  attachment_height?: number | null;
+  is_edited?: boolean;
+  edited_at?: string | null;
   /** 프론트 전용 — 낙관적 전송 상태 */
   _status?: 'sending' | 'failed';
+  /** 프론트 전용 — 전송 중 이미지 미리보기 (object URL) */
+  _localUrl?: string;
+  /** 프론트 전용 — 실패 시 재전송용 원본 파일 */
+  _file?: File;
+}
+
+export interface ChatMessageVersionDTO {
+  content: string;
+  created_at: string;
+  is_current: boolean;
+}
+
+export interface ChatMessageHistoryDTO {
+  message_id: number;
+  versions: ChatMessageVersionDTO[];
 }
 
 export interface ChatMessagePageDTO {
@@ -57,6 +77,7 @@ export interface ChatRoomSummaryDTO {
 
 export interface ChatRoomDetailDTO extends ChatRoomSummaryDTO {
   members: ChatMemberDTO[];
+  viewer_is_super_admin: boolean;
 }
 
 export interface CreateChatRoomDTO {
@@ -76,6 +97,7 @@ export type ChatSocketEvent =
   | { type: 'auth:error' }
   | { type: 'pong' }
   | { type: 'message:new'; room_id: number; message: ChatMessageDTO }
+  | { type: 'message:updated'; room_id: number; message: ChatMessageDTO }
   | { type: 'message:deleted'; room_id: number; message_id: number }
   | { type: 'room:read'; room_id: number; user_id: number; last_read_message_id: number }
   | { type: 'room:updated'; room_id: number }

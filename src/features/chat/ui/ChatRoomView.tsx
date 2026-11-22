@@ -15,7 +15,9 @@ import {
   useChatNotificationMutation,
   useChatRoomQuery,
   useDeleteChatMessageMutation,
+  useEditChatMessageMutation,
   useMarkChatReadMutation,
+  useSendChatImageMutation,
   useSendChatMessageMutation,
 } from '../api/queries';
 import { flattenMessages, patchMessage } from '../model/cache';
@@ -24,8 +26,9 @@ import { buildRows, newClientId } from '../model/format';
 import { useTypingNames } from '../model/typingStore';
 
 import { RoomAvatar } from './ChatAvatar';
-import { ChatComposer } from './ChatComposer';
+import { ChatComposer, type EditingMessage } from './ChatComposer';
 import { DateDivider, MessageBubble, SystemMessage, TypingBubble } from './MessageBubble';
+import { EditHistoryDialog, ImageViewerDialog, MessageActionsDialog } from './MessageDialogs';
 import { RoomInfoSheet } from './RoomInfoSheet';
 
 import type { ChatMessageDTO } from '../api/dto';
@@ -35,6 +38,7 @@ import { USER_ROLES } from '@/entities/user/model/role';
 import { Button } from '@/shared/components/ui/button';
 import ConfirmDialog from '@/shared/components/ui/confirm-dialog';
 import { Spinner } from '@/shared/components/ui/spinner';
+import { getUploadUrl } from '@/shared/lib/avatar';
 import { cn } from '@/shared/lib/utils';
 
 type ChatRoomViewProps = {
@@ -61,11 +65,17 @@ export const ChatRoomView = ({ roomId, onBack, showBack }: ChatRoomViewProps) =>
 
   const sendMutation = useSendChatMessageMutation(roomId, me);
   const deleteMutation = useDeleteChatMessageMutation(roomId);
+  const imageMutation = useSendChatImageMutation(roomId, me);
+  const editMutation = useEditChatMessageMutation(roomId);
   const readMutation = useMarkChatReadMutation(roomId);
   const notifyMutation = useChatNotificationMutation(roomId);
 
   const [infoOpen, setInfoOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<ChatMessageDTO | null>(null);
+  const [actionTarget, setActionTarget] = useState<ChatMessageDTO | null>(null);
+  const [editing, setEditing] = useState<EditingMessage | null>(null);
+  const [viewerSrc, setViewerSrc] = useState<string | null>(null);
+  const [historyId, setHistoryId] = useState<number | null>(null);
   const [newCount, setNewCount] = useState(0);
 
   // ── 보고 있는 방 알림 (서버가 이 방 푸시를 보내지 않음) ─────────────────────
@@ -199,7 +209,7 @@ export const ChatRoomView = ({ roomId, onBack, showBack }: ChatRoomViewProps) =>
   const unreadFor = useMemo(() => {
     const members = room?.members ?? [];
     return (m: ChatMessageDTO) => {
-      if (m.id < 0 || m.message_type !== 'text') return 0;
+      if (m.id < 0 || m.message_type === 'system') return 0;
       let n = 0;
       for (const mem of members) {
         if (mem.id !== m.sender?.id && mem.last_read_message_id < m.id) n += 1;
@@ -209,12 +219,23 @@ export const ChatRoomView = ({ roomId, onBack, showBack }: ChatRoomViewProps) =>
   }, [room?.members]);
 
   // ── 전송 ───────────────────────────────────────────────────────────────────
+  const { mutate: sendText } = sendMutation;
+  const { mutate: sendImage } = imageMutation;
+
   const send = useCallback(
     (text: string) => {
       atBottomRef.current = true;
-      sendMutation.mutate({ content: text, clientId: newClientId() });
+      sendText({ content: text, clientId: newClientId() });
     },
-    [sendMutation],
+    [sendText],
+  );
+
+  const sendImages = useCallback(
+    (files: File[]) => {
+      atBottomRef.current = true;
+      files.forEach((file) => sendImage({ file, clientId: newClientId() }));
+    },
+    [sendImage],
   );
 
   const retry = useCallback(
@@ -225,10 +246,29 @@ export const ChatRoomView = ({ roomId, onBack, showBack }: ChatRoomViewProps) =>
         (x) => x.client_id === m.client_id && x.id < 0,
         () => null,
       );
-      send(m.content);
+      if (m.message_type === 'image') {
+        if (m._file) sendImages([m._file]);
+      } else {
+        send(m.content);
+      }
     },
-    [qc, roomId, send],
+    [qc, roomId, send, sendImages],
   );
+
+  const submitEdit = useCallback(
+    (id: number, text: string) => {
+      editMutation.mutate({ messageId: id, content: text });
+      setEditing(null);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [editMutation.mutate],
+  );
+
+  const canViewHistory = !!room?.viewer_is_super_admin;
+  const actionImageSrc =
+    actionTarget?.message_type === 'image'
+      ? (actionTarget._localUrl ?? getUploadUrl(actionTarget.attachment_url))
+      : undefined;
 
   // ── 렌더 ───────────────────────────────────────────────────────────────────
   if (roomError) {
@@ -349,7 +389,10 @@ export const ChatRoomView = ({ roomId, onBack, showBack }: ChatRoomViewProps) =>
                 isFirst={row.isFirst}
                 isLast={row.isLast}
                 unreadCount={unreadFor(row.message)}
-                onRequestDelete={setDeleteTarget}
+                canViewHistory={canViewHistory}
+                onOpenActions={setActionTarget}
+                onOpenImage={setViewerSrc}
+                onViewHistory={(m) => setHistoryId(m.id)}
                 onRetry={retry}
               />
             );
@@ -376,9 +419,13 @@ export const ChatRoomView = ({ roomId, onBack, showBack }: ChatRoomViewProps) =>
       <div className="relative z-20 shrink-0">
         <ChatComposer
           onSend={send}
+          onSendImages={sendImages}
           onTyping={() => chatSocket.sendTyping(roomId)}
           disabled={!room}
           resetKey={roomId}
+          editing={editing}
+          onSubmitEdit={submitEdit}
+          onCancelEdit={() => setEditing(null)}
         />
       </div>
 
@@ -406,6 +453,30 @@ export const ChatRoomView = ({ roomId, onBack, showBack }: ChatRoomViewProps) =>
           deleteMutation.mutate(deleteTarget.id, { onSettled: () => setDeleteTarget(null) });
         }}
       />
+
+      {actionTarget && (
+        <MessageActionsDialog
+          message={actionTarget}
+          isMine={actionTarget.sender?.id === myId}
+          canViewHistory={canViewHistory}
+          imageSrc={actionImageSrc}
+          onClose={() => setActionTarget(null)}
+          onEdit={(m) => setEditing({ id: m.id, content: m.content })}
+          onDelete={setDeleteTarget}
+          onViewHistory={(m) => setHistoryId(m.id)}
+          onOpenImage={setViewerSrc}
+        />
+      )}
+
+      <ImageViewerDialog src={viewerSrc} onClose={() => setViewerSrc(null)} />
+
+      {canViewHistory && (
+        <EditHistoryDialog
+          roomId={roomId}
+          messageId={historyId}
+          onClose={() => setHistoryId(null)}
+        />
+      )}
     </div>
   );
 };
