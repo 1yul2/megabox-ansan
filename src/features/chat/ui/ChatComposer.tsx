@@ -1,6 +1,7 @@
-import { ArrowUp } from 'lucide-react';
+import { SendHorizontal } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
+import { Button } from '@/shared/components/ui/button';
 import { cn } from '@/shared/lib/utils';
 
 type ChatComposerProps = {
@@ -33,7 +34,7 @@ export const ChatComposer = ({ onSend, onTyping, disabled, resetKey }: ChatCompo
     const el = ref.current;
     if (!el) return;
     el.style.height = 'auto';
-    el.style.height = `${Math.min(el.scrollHeight, 132)}px`;
+    el.style.height = `${Math.min(el.scrollHeight, 128)}px`;
   }, [text]);
 
   const canSend = text.trim().length > 0 && !disabled;
@@ -65,14 +66,8 @@ export const ChatComposer = ({ onSend, onTyping, disabled, resetKey }: ChatCompo
   };
 
   return (
-    <div className="px-3 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-5 sm:pb-4">
-      <div
-        className={cn(
-          'flex items-end gap-2 rounded-[26px] bg-white/90 p-1.5 pl-4 backdrop-blur-xl',
-          'shadow-[0_8px_30px_-12px_rgba(23,43,77,0.25)] ring-1 ring-black/[0.06]',
-          'transition focus-within:ring-2 focus-within:ring-mega-secondary/30',
-        )}
-      >
+    <div className="border-t border-gray-100 bg-white px-3 pt-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom))] sm:px-4">
+      <div className="flex items-end gap-2">
         <textarea
           ref={ref}
           rows={1}
@@ -80,30 +75,30 @@ export const ChatComposer = ({ onSend, onTyping, disabled, resetKey }: ChatCompo
           disabled={disabled}
           onChange={(e) => handleChange(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="메시지 보내기"
+          placeholder="메시지를 입력하세요"
           enterKeyHint="send"
           aria-label="메시지 입력"
-          className="max-h-[132px] min-h-[40px] flex-1 resize-none bg-transparent py-2 text-[16px] leading-6 outline-none placeholder:text-gray-400 disabled:opacity-50"
+          className={cn(
+            'max-h-[128px] min-h-10 flex-1 resize-none rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2 text-base leading-6 outline-none sm:text-sm',
+            'placeholder:text-gray-400 transition-colors focus:border-mega-secondary/50 focus:bg-white focus:ring-[3px] focus:ring-ring/20 disabled:opacity-50',
+          )}
         />
-        <button
+        <Button
           type="button"
+          size="icon"
+          rounded="lg"
           onClick={send}
           // 버튼 탭 시 textarea 포커스가 빠져 키보드가 닫히는 것 방지
           onPointerDown={(e) => e.preventDefault()}
           disabled={!canSend}
           aria-label="보내기"
-          className={cn(
-            'flex size-10 shrink-0 items-center justify-center rounded-full text-white transition-all duration-200',
-            canSend
-              ? 'scale-100 bg-linear-to-br from-mega-secondary to-mega shadow-[0_6px_16px_-6px_rgba(23,43,77,0.6)] active:scale-90'
-              : 'scale-90 bg-gray-200',
-          )}
+          className="shrink-0"
         >
-          <ArrowUp className="size-5" strokeWidth={2.5} />
-        </button>
+          <SendHorizontal className="size-[18px]" />
+        </Button>
       </div>
       {text.length > MAX_LENGTH - 200 && (
-        <p className="mt-1 pr-3 text-right text-[11px] text-gray-400 tabular-nums">
+        <p className="mt-1 text-right text-[11px] text-gray-400 tabular-nums">
           {text.length}/{MAX_LENGTH}
         </p>
       )}

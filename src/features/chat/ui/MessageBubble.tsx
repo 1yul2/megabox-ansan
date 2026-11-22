@@ -7,6 +7,7 @@ import { ChatAvatar } from './ChatAvatar';
 
 import type { ChatMessageDTO } from '../api/dto';
 
+import { UserProfileTrigger } from '@/entities/user/ui/UserProfileCard';
 import { cn } from '@/shared/lib/utils';
 
 type MessageBubbleProps = {
@@ -17,7 +18,6 @@ type MessageBubbleProps = {
   unreadCount: number;
   onRequestDelete?: (message: ChatMessageDTO) => void;
   onRetry?: (message: ChatMessageDTO) => void;
-  onAvatarClick?: (message: ChatMessageDTO) => void;
 };
 
 const LONG_PRESS_MS = 450;
@@ -34,6 +34,7 @@ export const MessageBubble = memo(
   }: MessageBubbleProps) => {
     const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const canDelete = isMine && !message.is_deleted && message.id > 0 && !!onRequestDelete;
+    const sender = message.sender;
 
     const cancelPress = () => {
       if (pressTimer.current) clearTimeout(pressTimer.current);
@@ -51,26 +52,6 @@ export const MessageBubble = memo(
 
     const status = message._status;
 
-    const meta = (
-      <span
-        className={cn(
-          'flex shrink-0 flex-col justify-end gap-0.5 pb-0.5 text-[10px] leading-none tabular-nums',
-          isMine ? 'items-end' : 'items-start',
-        )}
-      >
-        {status === 'sending' ? (
-          <span className="size-3 animate-spin rounded-full border-[1.5px] border-gray-300 border-t-transparent" />
-        ) : status === 'failed' ? null : (
-          <>
-            {unreadCount > 0 && (
-              <span className="font-bold text-mega-secondary">{unreadCount}</span>
-            )}
-            {isLast && <span className="text-gray-400">{formatClock(message.created_at)}</span>}
-          </>
-        )}
-      </span>
-    );
-
     return (
       <div
         className={cn(
@@ -79,19 +60,33 @@ export const MessageBubble = memo(
           isFirst ? 'mt-3' : 'mt-1',
         )}
       >
-        {/* 상대 아바타 (연속 메시지 첫 줄만) */}
+        {/* 상대 아바타 (연속 메시지 첫 줄만) — 클릭 시 프로필 카드 */}
         {!isMine && (
           <span className="w-9 shrink-0">
-            {isFirst && <ChatAvatar user={message.sender} className="size-9 ring-2 ring-white" />}
+            {isFirst &&
+              (sender ? (
+                <UserProfileTrigger
+                  userId={sender.id}
+                  name={sender.name}
+                  profileImage={sender.profile_image}
+                  gender={sender.gender}
+                  position={sender.position}
+                  className="rounded-full"
+                >
+                  <ChatAvatar user={sender} className="size-9 border border-gray-200" />
+                </UserProfileTrigger>
+              ) : (
+                <ChatAvatar user={null} className="size-9 border border-gray-200" />
+              ))}
           </span>
         )}
 
         <div
-          className={cn('flex min-w-0 max-w-[78%] flex-col sm:max-w-[68%]', isMine && 'items-end')}
+          className={cn('flex min-w-0 max-w-[78%] flex-col sm:max-w-[65%]', isMine && 'items-end')}
         >
           {!isMine && isFirst && (
-            <span className="mb-1 ml-1 text-xs font-medium text-gray-500">
-              {message.sender?.name ?? '알 수 없음'}
+            <span className="mb-1 ml-0.5 text-xs font-medium text-gray-600">
+              {sender?.name ?? '알 수 없음'}
             </span>
           )}
 
@@ -107,14 +102,13 @@ export const MessageBubble = memo(
                 onRequestDelete?.(message);
               }}
               className={cn(
-                'relative min-w-0 select-text px-3.5 py-2 text-[15px] leading-relaxed whitespace-pre-wrap break-words [overflow-wrap:anywhere]',
-                'animate-in fade-in slide-in-from-bottom-1 duration-200',
+                'min-w-0 rounded-2xl px-3.5 py-2 text-sm leading-relaxed whitespace-pre-wrap break-words [overflow-wrap:anywhere]',
                 isMine
-                  ? 'rounded-[20px] bg-linear-to-br from-mega-secondary to-mega text-white shadow-[0_6px_16px_-8px_rgba(23,43,77,0.55)]'
-                  : 'rounded-[20px] bg-white text-gray-900 shadow-[0_1px_2px_rgba(16,24,40,0.06)] ring-1 ring-black/[0.04]',
-                isFirst && (isMine ? 'rounded-tr-md' : 'rounded-tl-md'),
-                status === 'sending' && 'opacity-70',
-                status === 'failed' && 'opacity-60 ring-2 ring-red-300',
+                  ? 'bg-mega text-white'
+                  : 'border border-gray-200 bg-white text-gray-800 shadow-xs',
+                isFirst && (isMine ? 'rounded-tr-sm' : 'rounded-tl-sm'),
+                status === 'sending' && 'opacity-60',
+                status === 'failed' && 'opacity-60 outline-2 outline-red-300',
                 message.is_deleted && 'italic opacity-60',
               )}
             >
@@ -129,7 +123,7 @@ export const MessageBubble = memo(
                         rel="noopener noreferrer"
                         className={cn(
                           'underline underline-offset-2',
-                          isMine ? 'text-white' : 'text-mega-secondary',
+                          isMine ? 'text-ice-soft' : 'text-mega-secondary',
                         )}
                       >
                         {part.text}
@@ -140,7 +134,26 @@ export const MessageBubble = memo(
                   )}
             </div>
 
-            {meta}
+            {/* 안 읽은 사람 수 + 시간 */}
+            <span
+              className={cn(
+                'flex shrink-0 flex-col justify-end gap-0.5 pb-0.5 text-[10px] leading-none tabular-nums',
+                isMine ? 'items-end' : 'items-start',
+              )}
+            >
+              {status === 'sending' ? (
+                <span className="size-3 animate-spin rounded-full border-[1.5px] border-gray-300 border-t-transparent" />
+              ) : status === 'failed' ? null : (
+                <>
+                  {unreadCount > 0 && (
+                    <span className="font-semibold text-warning">{unreadCount}</span>
+                  )}
+                  {isLast && (
+                    <span className="text-gray-400">{formatClock(message.created_at)}</span>
+                  )}
+                </>
+              )}
+            </span>
 
             {/* 데스크탑 hover 삭제 버튼 */}
             {canDelete && (
@@ -148,7 +161,7 @@ export const MessageBubble = memo(
                 type="button"
                 onClick={() => onRequestDelete?.(message)}
                 aria-label="메시지 삭제"
-                className="mb-1 hidden size-7 shrink-0 items-center justify-center rounded-full text-gray-300 opacity-0 transition hover:bg-red-50 hover:text-red-500 group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:hover)]:flex"
+                className="mb-0.5 hidden size-7 shrink-0 items-center justify-center rounded-lg text-gray-300 opacity-0 transition hover:bg-red-50 hover:text-red-500 group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:hover)]:flex"
               >
                 <Trash2 className="size-3.5" />
               </button>
@@ -175,17 +188,17 @@ MessageBubble.displayName = 'MessageBubble';
 
 export const SystemMessage = ({ content }: { content: string }) => (
   <div className="my-3 flex justify-center px-6">
-    <span className="rounded-full bg-black/[0.045] px-3 py-1 text-center text-[11.5px] text-gray-500 backdrop-blur-sm">
+    <span className="rounded-full bg-gray-200/60 px-3 py-1 text-center text-[11px] text-gray-500">
       {content}
     </span>
   </div>
 );
 
 export const DateDivider = ({ label }: { label: string }) => (
-  <div className="sticky top-2 z-10 my-4 flex justify-center">
-    <span className="rounded-full bg-white/75 px-3 py-1 text-[11px] font-medium text-gray-500 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.12)] ring-1 ring-black/[0.04] backdrop-blur-xl">
-      {label}
-    </span>
+  <div className="my-4 flex items-center gap-3 px-5">
+    <span className="h-px flex-1 bg-gray-200" />
+    <span className="text-[11px] font-medium text-gray-400">{label}</span>
+    <span className="h-px flex-1 bg-gray-200" />
   </div>
 );
 
@@ -196,8 +209,8 @@ export const TypingBubble = ({ names }: { names: string[] }) => {
       ? `${names[0]}님이 입력 중`
       : `${names[0]}님 외 ${names.length - 1}명이 입력 중`;
   return (
-    <div className="mt-3 flex items-center gap-2 px-3 sm:px-5 animate-in fade-in slide-in-from-bottom-1 duration-200">
-      <span className="flex h-8 items-center gap-1 rounded-[18px] rounded-tl-md bg-white px-3.5 ring-1 ring-black/[0.04]">
+    <div className="mt-3 flex items-center gap-2 px-3 sm:px-5">
+      <span className="flex h-8 items-center gap-1 rounded-2xl rounded-tl-sm border border-gray-200 bg-white px-3.5">
         {[0, 1, 2].map((i) => (
           <span
             key={i}

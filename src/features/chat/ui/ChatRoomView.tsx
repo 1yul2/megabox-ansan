@@ -1,5 +1,13 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { ArrowDown, Bell, BellOff, ChevronLeft, Menu, MessageCircleOff } from 'lucide-react';
+import {
+  ArrowDown,
+  Bell,
+  BellOff,
+  ChevronLeft,
+  Menu,
+  MessageCircleOff,
+  MessagesSquare,
+} from 'lucide-react';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import {
@@ -24,6 +32,7 @@ import type { ChatMessageDTO } from '../api/dto';
 
 import { useUserQuery } from '@/entities/user/api/queries';
 import { USER_ROLES } from '@/entities/user/model/role';
+import { Button } from '@/shared/components/ui/button';
 import ConfirmDialog from '@/shared/components/ui/confirm-dialog';
 import { Spinner } from '@/shared/components/ui/spinner';
 import { cn } from '@/shared/lib/utils';
@@ -232,7 +241,7 @@ export const ChatRoomView = ({ roomId, onBack, showBack }: ChatRoomViewProps) =>
         <button
           type="button"
           onClick={onBack}
-          className="rounded-full bg-gray-900 px-5 py-2 text-sm font-semibold text-white"
+          className="rounded-lg bg-mega px-4 py-2 text-sm font-semibold text-white hover:bg-mega-hover"
         >
           목록으로
         </button>
@@ -243,46 +252,31 @@ export const ChatRoomView = ({ roomId, onBack, showBack }: ChatRoomViewProps) =>
   const others = room?.members.filter((m) => m.id !== myId) ?? [];
 
   return (
-    <div className="relative flex h-full min-h-0 flex-col overflow-hidden bg-[#f4f6fa]">
-      {/* 은은한 앰비언트 배경 */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 opacity-90"
-        style={{
-          background:
-            'radial-gradient(60% 45% at 100% 0%, rgba(49,95,145,0.10), transparent 70%), radial-gradient(50% 40% at 0% 100%, rgba(120,160,220,0.12), transparent 70%)',
-        }}
-      />
-
-      {/* 헤더 (글래스) */}
-      <header className="relative z-20 flex shrink-0 items-center gap-2 border-b border-black/[0.04] bg-white/70 px-2 pt-[max(0.5rem,env(safe-area-inset-top))] pb-2 backdrop-blur-xl sm:px-4 lg:pt-2">
+    <div className="relative flex h-full min-h-0 flex-col overflow-hidden bg-app-bg">
+      {/* 헤더 */}
+      <header className="relative z-20 flex shrink-0 items-center gap-1 border-b border-gray-100 bg-white px-2 pt-[max(0.5rem,env(safe-area-inset-top))] pb-2 sm:px-3 lg:pt-2">
         {showBack && (
-          <button
-            type="button"
-            onClick={onBack}
-            aria-label="뒤로"
-            className="flex size-10 items-center justify-center rounded-full text-gray-700 active:bg-black/5"
-          >
+          <Button variant="ghost" size="icon" onClick={onBack} aria-label="뒤로">
             <ChevronLeft className="size-6" />
-          </button>
+          </Button>
         )}
         <button
           type="button"
           onClick={() => setInfoOpen(true)}
-          className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl px-1.5 py-1 text-left hover:bg-black/[0.03]"
+          className="flex min-w-0 flex-1 items-center gap-3 rounded-lg px-1.5 py-1 text-left transition-colors hover:bg-gray-50"
         >
           {room ? (
             <RoomAvatar
               isGlobal={room.is_global}
               members={others.length ? others : room.members}
-              className="size-10 rounded-[15px]"
+              className="size-10"
             />
           ) : (
-            <span className="size-10 animate-pulse rounded-[15px] bg-gray-200" />
+            <span className="size-10 animate-pulse rounded-full bg-gray-100" />
           )}
           <span className="min-w-0">
             <span className="flex items-center gap-1.5">
-              <span className="truncate text-[16px] font-bold text-gray-900">
+              <span className="truncate text-[15px] font-semibold text-gray-900">
                 {room?.name ?? ' '}
               </span>
               {room && !room.notify_enabled && (
@@ -299,28 +293,26 @@ export const ChatRoomView = ({ roomId, onBack, showBack }: ChatRoomViewProps) =>
           </span>
         </button>
         {room && (
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={() => notifyMutation.mutate(!room.notify_enabled)}
             disabled={notifyMutation.isPending}
             aria-label={room.notify_enabled ? '이 방 알림 끄기' : '이 방 알림 켜기'}
             title={room.notify_enabled ? '알림 끄기' : '알림 켜기'}
-            className={cn(
-              'flex size-10 items-center justify-center rounded-full transition-colors',
-              room.notify_enabled ? 'text-gray-600 hover:bg-black/5' : 'bg-gray-100 text-gray-400',
-            )}
+            className={cn(!room.notify_enabled && 'text-gray-400')}
           >
             {room.notify_enabled ? <Bell className="size-5" /> : <BellOff className="size-5" />}
-          </button>
+          </Button>
         )}
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="icon"
           onClick={() => setInfoOpen(true)}
           aria-label="채팅방 정보"
-          className="flex size-10 items-center justify-center rounded-full text-gray-600 hover:bg-black/5"
         >
           <Menu className="size-5" />
-        </button>
+        </Button>
       </header>
 
       {/* 메시지 */}
@@ -341,7 +333,8 @@ export const ChatRoomView = ({ roomId, onBack, showBack }: ChatRoomViewProps) =>
           </div>
         ) : rows.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center gap-2 px-8 text-center">
-            <p className="text-sm font-medium text-gray-600">첫 메시지를 보내보세요</p>
+            <MessagesSquare className="size-8 text-gray-300" />
+            <p className="text-sm text-gray-400">첫 메시지를 보내보세요.</p>
           </div>
         ) : (
           rows.map((row) => {
@@ -373,7 +366,7 @@ export const ChatRoomView = ({ roomId, onBack, showBack }: ChatRoomViewProps) =>
             scrollToBottom(true);
             setNewCount(0);
           }}
-          className="absolute bottom-24 left-1/2 z-20 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-gray-900/85 px-4 py-2 text-xs font-semibold text-white shadow-lg backdrop-blur animate-in fade-in slide-in-from-bottom-2"
+          className="absolute bottom-20 left-1/2 z-20 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-mega px-4 py-2 text-xs font-semibold text-white shadow-md animate-in fade-in"
         >
           <ArrowDown className="size-3.5" />새 메시지 {newCount}개
         </button>
