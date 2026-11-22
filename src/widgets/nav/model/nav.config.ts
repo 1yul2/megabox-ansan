@@ -1,4 +1,13 @@
-import { CalendarDays, ClipboardCheck, House, MessageCircle, Newspaper, Receipt, Settings2 } from 'lucide-react';
+import {
+  CalendarDays,
+  ClipboardCheck,
+  House,
+  MessageCircle,
+  MessagesSquare,
+  Newspaper,
+  Receipt,
+  Settings2,
+} from 'lucide-react';
 
 import type { LucideIcon } from 'lucide-react';
 
@@ -49,6 +58,13 @@ export const NAV_ITEMS: NavItemConfig[] = [
     label: '게시판',
     path: ROUTES.COMMUNITY,
     icon: Newspaper,
+    requiredRoles: [USER_ROLES.ADMIN, USER_ROLES.LEADER, USER_ROLES.CREW, USER_ROLES.CLEANER],
+  },
+  {
+    key: 'chat',
+    label: '채팅',
+    path: ROUTES.CHAT,
+    icon: MessagesSquare,
     requiredRoles: [USER_ROLES.ADMIN, USER_ROLES.LEADER, USER_ROLES.CREW, USER_ROLES.CLEANER],
   },
   {

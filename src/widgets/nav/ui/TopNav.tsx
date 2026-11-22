@@ -8,6 +8,7 @@ import { EMPTY_SHORTCUTS, useShortcutStore } from '../model/shortcutStore';
 
 import { useUserQuery } from '@/entities/user/api/queries';
 import { useLogoutMutation } from '@/features/login/api/queries';
+import { useChatUnreadQuery } from '@/features/chat';
 import { useUnreadCountQuery } from '@/features/message';
 import { useMyProfileQuery } from '@/features/mypage';
 import { NotificationBell } from '@/features/notification';
@@ -165,6 +166,7 @@ const TopNav = () => {
   const { data: profile } = useMyProfileQuery();
   const { mutate: logout } = useLogoutMutation();
   const { data: messageUnread } = useUnreadCountQuery();
+  const { data: chatUnread } = useChatUnreadQuery();
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
   const [shortcutPopoverOpen, setShortcutPopoverOpen] = useState(false);
 
@@ -220,7 +222,11 @@ const TopNav = () => {
             const Icon = item.icon;
             const active = isActive(item);
             const unreadBadge =
-              item.key === 'messages' ? (messageUnread?.count ?? 0) : undefined;
+              item.key === 'messages'
+                ? (messageUnread?.count ?? 0)
+                : item.key === 'chat'
+                  ? (chatUnread?.count ?? 0)
+                  : undefined;
 
             return (
               <button

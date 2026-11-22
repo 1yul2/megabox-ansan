@@ -85,6 +85,15 @@
       [...QUERY_KEYS.mypage.base, 'attendance', year, month] as const,
   },
 
+  chat: {
+    base: ['chat'] as const,
+    rooms: () => [...QUERY_KEYS.chat.base, 'rooms'] as const,
+    room: (roomId: number) => [...QUERY_KEYS.chat.base, 'room', roomId] as const,
+    messages: (roomId: number) => [...QUERY_KEYS.chat.base, 'messages', roomId] as const,
+    unread: () => [...QUERY_KEYS.chat.base, 'unread'] as const,
+    users: (q: string) => [...QUERY_KEYS.chat.base, 'users', q] as const,
+  },
+
   message: {
     base: ['message'] as const,
     inbox: () => [...QUERY_KEYS.message.base, 'inbox'] as const,

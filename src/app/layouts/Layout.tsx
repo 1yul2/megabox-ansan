@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Outlet, useLocation } from 'react-router';
 
+import { useChatRealtime } from '@/features/chat';
 import { usePushSubscriptionSync } from '@/features/notification';
 import { useAuthStore } from '@/shared/model/authStore';
 import { MobileTabBar, SideNav, TopNav } from '@/widgets/nav';
@@ -11,6 +12,7 @@ export const Layout = () => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const { pathname } = useLocation();
   usePushSubscriptionSync(isAuthenticated);
+  useChatRealtime(isAuthenticated);
 
   // 페이지 이동 시 드로어 닫기 + 맨 위로
   useEffect(() => {

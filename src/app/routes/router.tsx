@@ -11,6 +11,7 @@ import HomeRoute from './HomeRoute';
 import { NotFoundPage } from '@/pages/404';
 import { AdminPage } from '@/pages/admin';
 import { ApplyPage, ApplyDayoffTab, ApplyFixedDayoffTab, ApplyShiftTab } from '@/pages/apply';
+import { ChatPage } from '@/pages/chat';
 import {
   Communiity,
   DayoffPage,
@@ -102,6 +103,14 @@ export const router = createBrowserRouter([
       {
         path: ROUTES.MESSAGES,
         element: <MessagesPage />,
+      },
+      {
+        path: ROUTES.CHAT,
+        element: <ChatPage />,
+      },
+      {
+        path: `${ROUTES.CHAT}/:roomId`,
+        element: <ChatPage />,
       },
       {
         path: ROUTES.APPLY,

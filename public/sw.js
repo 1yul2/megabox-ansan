@@ -30,6 +30,8 @@ self.addEventListener('push', (event) => {
       icon: '/icons/icon-192.png',
       badge: '/icons/icon-192.png',
       data: { link: payload.link || '/' },
+      // 채팅 알림은 방별 tag 로 묶어 알림이 쌓이지 않게 하고, 새 메시지마다 다시 울리게 한다
+      ...(payload.tag ? { tag: payload.tag, renotify: true } : {}),
     }),
   ];
 

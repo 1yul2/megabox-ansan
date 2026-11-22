@@ -4,11 +4,12 @@ import { useLocation, useNavigate } from 'react-router';
 import { NAV_ITEMS, type NavItemConfig } from '../model/nav.config';
 
 import { useUserQuery } from '@/entities/user/api/queries';
+import { useChatUnreadQuery } from '@/features/chat';
 import { useUnreadCountQuery } from '@/features/message';
 import { cn } from '@/shared/lib/utils';
 
 /** 하단 탭에 노출할 메뉴 (나머지는 '전체' 드로어에서 접근) */
-const TAB_KEYS = ['dashboard', 'schedule', 'pay', 'community'] as const;
+const TAB_KEYS = ['dashboard', 'schedule', 'pay', 'chat', 'community'] as const;
 
 interface MobileTabBarProps {
   onMenuClick: () => void;
@@ -21,6 +22,8 @@ const MobileTabBar = ({ onMenuClick, menuOpen = false }: MobileTabBarProps) => {
   const navigate = useNavigate();
   const { data: user } = useUserQuery();
   const { data: messageUnread } = useUnreadCountQuery();
+  const { data: chatUnread } = useChatUnreadQuery();
+  const chatUnreadCount = chatUnread?.count ?? 0;
 
   const tabs = TAB_KEYS.map((key) => NAV_ITEMS.find((item) => item.key === key)).filter(
     (item): item is NavItemConfig =>
@@ -61,7 +64,14 @@ const MobileTabBar = ({ onMenuClick, menuOpen = false }: MobileTabBarProps) => {
               {active && (
                 <span className="absolute top-0 left-1/2 h-0.5 w-8 -translate-x-1/2 rounded-b-full bg-mega" />
               )}
-              <Icon className="size-[22px]" strokeWidth={active ? 2.25 : 1.9} />
+              <span className="relative">
+                <Icon className="size-[22px]" strokeWidth={active ? 2.25 : 1.9} />
+                {item.key === 'chat' && chatUnreadCount > 0 && (
+                  <span className="absolute -top-1.5 left-3 min-w-4 h-4 rounded-full bg-red-500 px-1 text-center text-[9px] font-bold leading-4 text-white ring-2 ring-white tabular-nums">
+                    {chatUnreadCount > 99 ? '99+' : chatUnreadCount}
+                  </span>
+                )}
+              </span>
               <span className="truncate">{item.label}</span>
             </button>
           );

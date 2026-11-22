@@ -12,5 +12,6 @@ export const ROUTES = {
   SCHEDULE: '/schedule',
   MYPAGE: '/mypage',
   MESSAGES: '/messages',
+  CHAT: '/chat',
   NOT_FOUND: '*',
 } as const;
