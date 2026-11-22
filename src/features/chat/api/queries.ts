@@ -7,11 +7,11 @@ import {
 } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
-import { patchMessage, upsertMessage, markMessageDeleted } from '../model/cache';
+import { patchMessage, upsertMessage, markMessageDeleted, sortRooms } from '../model/cache';
 
 import { chatService } from './service';
 
-import type { ChatMessageDTO, CreateChatRoomDTO } from './dto';
+import type { ChatMessageDTO, ChatRoomSummaryDTO, CreateChatRoomDTO } from './dto';
 import type { User } from '@/entities/user/model/user';
 
 import { QUERY_KEYS } from '@/shared/api/queryKeys';
@@ -26,6 +26,7 @@ export function useChatRoomsQuery() {
   return useQuery({
     queryKey: QUERY_KEYS.chat.rooms(),
     queryFn: chatService.rooms,
+    select: sortRooms,
     staleTime: 15_000,
   });
 }
@@ -203,6 +204,34 @@ export function useMarkChatReadMutation(roomId: number) {
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: QUERY_KEYS.chat.rooms() });
       void qc.invalidateQueries({ queryKey: QUERY_KEYS.chat.unread() });
+    },
+  });
+}
+
+/** 상단 고정/해제 — 목록 순서를 즉시 바꾸고 실패 시 되돌린다 */
+export function useChatPinMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ roomId, pinned }: { roomId: number; pinned: boolean }) =>
+      chatService.setPinned(roomId, pinned),
+    onMutate: async ({ roomId, pinned }) => {
+      await qc.cancelQueries({ queryKey: QUERY_KEYS.chat.rooms() });
+      const prev = qc.getQueryData<ChatRoomSummaryDTO[]>(QUERY_KEYS.chat.rooms());
+      qc.setQueryData<ChatRoomSummaryDTO[]>(QUERY_KEYS.chat.rooms(), (rooms) =>
+        rooms?.map((r) => (r.id === roomId ? { ...r, is_pinned: pinned } : r)),
+      );
+      return { prev };
+    },
+    onSuccess: (room) => {
+      qc.setQueryData(QUERY_KEYS.chat.room(room.id), room);
+      toast.success(room.is_pinned ? '채팅방을 상단에 고정했습니다.' : '상단 고정을 해제했습니다.');
+    },
+    onError: (e, _v, ctx) => {
+      if (ctx?.prev) qc.setQueryData(QUERY_KEYS.chat.rooms(), ctx.prev);
+      toast.error(errorMessage(e, '고정 설정을 변경하지 못했습니다.'));
+    },
+    onSettled: () => {
+      void qc.invalidateQueries({ queryKey: QUERY_KEYS.chat.rooms() });
     },
   });
 }

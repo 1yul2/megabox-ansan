@@ -1,7 +1,7 @@
-import { BellOff, MessageSquarePlus, Search, Sparkles } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { Bell, BellOff, MessageSquarePlus, Pin, PinOff, Search, Sparkles } from 'lucide-react';
+import { useMemo, useRef, useState } from 'react';
 
-import { useChatRoomsQuery } from '../api/queries';
+import { useChatNotificationMutation, useChatPinMutation, useChatRoomsQuery } from '../api/queries';
 import { formatRoomTime } from '../model/format';
 import { useChatConnected } from '../model/useChatRealtime';
 
@@ -10,6 +10,12 @@ import { CreateRoomDialog } from './CreateRoomDialog';
 
 import type { ChatRoomSummaryDTO } from '../api/dto';
 
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from '@/shared/components/ui/dialog';
 import { cn } from '@/shared/lib/utils';
 
 type ChatRoomListProps = {
@@ -23,6 +29,12 @@ export const ChatRoomList = ({ activeRoomId, onSelect, className }: ChatRoomList
   const connected = useChatConnected();
   const [query, setQuery] = useState('');
   const [createOpen, setCreateOpen] = useState(false);
+  const [actionRoomId, setActionRoomId] = useState<number | null>(null);
+  const { mutate: setPinned } = useChatPinMutation();
+
+  const actionRoom = rooms.find((r) => r.id === actionRoomId) ?? null;
+  const togglePin = (room: ChatRoomSummaryDTO) =>
+    setPinned({ roomId: room.id, pinned: !room.is_pinned });
 
   const filtered = useMemo(() => {
     const q = query.trim();
@@ -117,18 +129,35 @@ export const ChatRoomList = ({ activeRoomId, onSelect, className }: ChatRoomList
           </div>
         ) : (
           <ul className="space-y-1">
-            {filtered.map((room) => (
-              <li key={room.id}>
-                <RoomRow
-                  room={room}
-                  active={room.id === activeRoomId}
-                  onClick={() => onSelect(room.id)}
-                />
-              </li>
-            ))}
+            {filtered.map((room, i) => {
+              // 고정 그룹과 일반 그룹 사이 구분선
+              const showDivider = i > 0 && filtered[i - 1].is_pinned && !room.is_pinned;
+              return (
+                <li key={room.id}>
+                  {showDivider && (
+                    <div className="mx-3 my-2 h-px bg-linear-to-r from-transparent via-black/[0.08] to-transparent" />
+                  )}
+                  <RoomRow
+                    room={room}
+                    active={room.id === activeRoomId}
+                    onClick={() => onSelect(room.id)}
+                    onTogglePin={() => togglePin(room)}
+                    onOpenActions={() => setActionRoomId(room.id)}
+                  />
+                </li>
+              );
+            })}
           </ul>
         )}
       </div>
+
+      {actionRoom && (
+        <RoomActionsDialog
+          room={actionRoom}
+          onClose={() => setActionRoomId(null)}
+          onTogglePin={() => togglePin(actionRoom)}
+        />
+      )}
 
       <CreateRoomDialog
         open={createOpen}
@@ -142,15 +171,41 @@ export const ChatRoomList = ({ activeRoomId, onSelect, className }: ChatRoomList
   );
 };
 
+const LONG_PRESS_MS = 450;
+
 const RoomRow = ({
   room,
   active,
   onClick,
+  onTogglePin,
+  onOpenActions,
 }: {
   room: ChatRoomSummaryDTO;
   active: boolean;
   onClick: () => void;
+  onTogglePin: () => void;
+  onOpenActions: () => void;
 }) => {
+  const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressed = useRef(false);
+
+  const cancelPress = () => {
+    if (pressTimer.current) clearTimeout(pressTimer.current);
+    pressTimer.current = null;
+  };
+
+  // 모바일: 길게 눌러 고정/알림 메뉴
+  const handlePointerDown = (e: React.PointerEvent) => {
+    if (e.pointerType !== 'touch') return;
+    longPressed.current = false;
+    cancelPress();
+    pressTimer.current = setTimeout(() => {
+      longPressed.current = true;
+      navigator.vibrate?.(10);
+      onOpenActions();
+    }, LONG_PRESS_MS);
+  };
+
   const last = room.last_message;
   const preview = last
     ? last.message_type === 'system'
@@ -164,70 +219,166 @@ const RoomRow = ({
   const hasUnread = room.unread_count > 0;
 
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-current={active ? 'true' : undefined}
-      className={cn(
-        'group flex w-full items-center gap-3 rounded-2xl p-3 text-left transition-all duration-200',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mega-secondary/40',
-        active
-          ? 'bg-white shadow-[0_8px_24px_-12px_rgba(23,43,77,0.35)] ring-1 ring-mega-secondary/15'
-          : 'hover:bg-white/80 active:scale-[0.99]',
-      )}
-    >
-      <span className="relative">
-        <RoomAvatar isGlobal={room.is_global} members={room.member_preview} />
-      </span>
-
-      <span className="min-w-0 flex-1">
-        <span className="flex items-center gap-1.5">
-          <span
-            className={cn(
-              'truncate text-[15px] text-gray-900',
-              hasUnread ? 'font-bold' : 'font-semibold',
-            )}
-          >
-            {room.name}
-          </span>
-          {room.is_global ? (
-            <span className="shrink-0 rounded-md bg-mega-secondary/10 px-1.5 py-px text-[10px] font-bold text-mega-secondary">
-              전체
-            </span>
-          ) : (
-            room.member_count > 2 && (
-              <span className="shrink-0 text-xs font-medium text-gray-400 tabular-nums">
-                {room.member_count}
-              </span>
-            )
-          )}
-          {!room.notify_enabled && <BellOff className="size-3 shrink-0 text-gray-300" />}
-          <span className="ml-auto shrink-0 pl-2 text-[11px] text-gray-400 tabular-nums">
-            {formatRoomTime(last?.created_at ?? null)}
-          </span>
+    <div className="group/row relative">
+      <button
+        type="button"
+        onClick={() => {
+          if (longPressed.current) {
+            longPressed.current = false;
+            return;
+          }
+          onClick();
+        }}
+        onPointerDown={handlePointerDown}
+        onPointerUp={cancelPress}
+        onPointerLeave={cancelPress}
+        onPointerMove={cancelPress}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          cancelPress();
+          onOpenActions();
+        }}
+        aria-current={active ? 'true' : undefined}
+        className={cn(
+          'group flex w-full select-none items-center gap-3 rounded-2xl p-3 text-left transition-all duration-200 [-webkit-touch-callout:none]',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mega-secondary/40',
+          active
+            ? 'bg-white shadow-[0_8px_24px_-12px_rgba(23,43,77,0.35)] ring-1 ring-mega-secondary/15'
+            : room.is_pinned
+              ? 'bg-mega-secondary/[0.035] hover:bg-white/80 active:scale-[0.99]'
+              : 'hover:bg-white/80 active:scale-[0.99]',
+        )}
+      >
+        <span className="relative">
+          <RoomAvatar isGlobal={room.is_global} members={room.member_preview} />
         </span>
-        <span className="mt-0.5 flex items-center gap-2">
-          <span
-            className={cn(
-              'line-clamp-1 flex-1 text-[13px] break-all',
-              hasUnread ? 'text-gray-700' : 'text-gray-400',
-              last?.is_deleted && 'italic',
-            )}
-          >
-            {preview}
-          </span>
-          {hasUnread && (
+
+        <span className="min-w-0 flex-1">
+          <span className="flex items-center gap-1.5">
             <span
               className={cn(
-                'shrink-0 min-w-5 h-5 rounded-full px-1.5 text-center text-[11px] font-bold leading-5 text-white tabular-nums',
-                room.notify_enabled ? 'bg-linear-to-r from-[#ff5f6d] to-[#ff2d55]' : 'bg-gray-300',
+                'truncate text-[15px] text-gray-900',
+                hasUnread ? 'font-bold' : 'font-semibold',
               )}
             >
-              {room.unread_count > 99 ? '99+' : room.unread_count}
+              {room.name}
             </span>
-          )}
+            {room.is_global ? (
+              <span className="shrink-0 rounded-md bg-mega-secondary/10 px-1.5 py-px text-[10px] font-bold text-mega-secondary">
+                전체
+              </span>
+            ) : (
+              room.member_count > 2 && (
+                <span className="shrink-0 text-xs font-medium text-gray-400 tabular-nums">
+                  {room.member_count}
+                </span>
+              )
+            )}
+            {room.is_pinned && (
+              <Pin
+                className="size-3 shrink-0 rotate-45 fill-mega-secondary text-mega-secondary"
+                aria-label="상단 고정됨"
+              />
+            )}
+            {!room.notify_enabled && <BellOff className="size-3 shrink-0 text-gray-300" />}
+            <span className="ml-auto shrink-0 pl-2 text-[11px] text-gray-400 tabular-nums">
+              {formatRoomTime(last?.created_at ?? null)}
+            </span>
+          </span>
+          <span className="mt-0.5 flex items-center gap-2">
+            <span
+              className={cn(
+                'line-clamp-1 flex-1 text-[13px] break-all',
+                hasUnread ? 'text-gray-700' : 'text-gray-400',
+                last?.is_deleted && 'italic',
+              )}
+            >
+              {preview}
+            </span>
+            {hasUnread && (
+              <span
+                className={cn(
+                  'shrink-0 min-w-5 h-5 rounded-full px-1.5 text-center text-[11px] font-bold leading-5 text-white tabular-nums',
+                  room.notify_enabled
+                    ? 'bg-linear-to-r from-[#ff5f6d] to-[#ff2d55]'
+                    : 'bg-gray-300',
+                )}
+              >
+                {room.unread_count > 99 ? '99+' : room.unread_count}
+              </span>
+            )}
+          </span>
         </span>
-      </span>
-    </button>
+      </button>
+
+      {/* 데스크탑: 마우스 올리면 고정 토글 버튼 */}
+      <button
+        type="button"
+        onClick={onTogglePin}
+        aria-label={room.is_pinned ? '상단 고정 해제' : '상단 고정'}
+        title={room.is_pinned ? '고정 해제' : '상단 고정'}
+        className={cn(
+          'absolute top-1/2 right-2.5 hidden size-8 -translate-y-1/2 items-center justify-center rounded-full bg-white text-gray-400 shadow-md ring-1 ring-black/5',
+          'opacity-0 transition hover:text-mega-secondary group-hover/row:opacity-100 focus-visible:opacity-100',
+          '[@media(hover:hover)]:flex',
+        )}
+      >
+        {room.is_pinned ? <PinOff className="size-4" /> : <Pin className="size-4" />}
+      </button>
+    </div>
+  );
+};
+
+/** 채팅방 빠른 메뉴 (모바일 길게 누르기 / 데스크탑 우클릭) */
+const RoomActionsDialog = ({
+  room,
+  onClose,
+  onTogglePin,
+}: {
+  room: ChatRoomSummaryDTO;
+  onClose: () => void;
+  onTogglePin: () => void;
+}) => {
+  const notification = useChatNotificationMutation(room.id);
+  const itemClass =
+    'flex w-full items-center gap-3 rounded-2xl px-4 py-3.5 text-left text-[15px] font-medium text-gray-800 transition-colors hover:bg-gray-50 active:bg-gray-100';
+
+  return (
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent showCloseButton={false} className="max-w-[300px] gap-1 rounded-3xl p-2 sm:p-2">
+        <div className="px-4 pt-3 pb-2">
+          <DialogTitle className="truncate text-base font-bold">{room.name}</DialogTitle>
+          <DialogDescription className="sr-only">채팅방 빠른 메뉴</DialogDescription>
+        </div>
+        <button
+          type="button"
+          className={itemClass}
+          onClick={() => {
+            onTogglePin();
+            onClose();
+          }}
+        >
+          {room.is_pinned ? (
+            <PinOff className="size-5 text-gray-500" />
+          ) : (
+            <Pin className="size-5 text-mega-secondary" />
+          )}
+          {room.is_pinned ? '상단 고정 해제' : '채팅방 상단 고정'}
+        </button>
+        <button
+          type="button"
+          className={itemClass}
+          disabled={notification.isPending}
+          onClick={() => notification.mutate(!room.notify_enabled, { onSuccess: onClose })}
+        >
+          {room.notify_enabled ? (
+            <BellOff className="size-5 text-gray-500" />
+          ) : (
+            <Bell className="size-5 text-mega-secondary" />
+          )}
+          {room.notify_enabled ? '알림 끄기' : '알림 켜기'}
+        </button>
+      </DialogContent>
+    </Dialog>
   );
 };

@@ -49,6 +49,7 @@ export interface ChatRoomSummaryDTO {
   member_count: number;
   unread_count: number;
   notify_enabled: boolean;
+  is_pinned: boolean;
   last_message: ChatLastMessageDTO | null;
   last_message_at: string | null;
   member_preview: ChatUserDTO[];

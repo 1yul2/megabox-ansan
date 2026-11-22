@@ -341,7 +341,6 @@ export const ChatRoomView = ({ roomId, onBack, showBack }: ChatRoomViewProps) =>
           </div>
         ) : rows.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center gap-2 px-8 text-center">
-            <span className="text-4xl">👋</span>
             <p className="text-sm font-medium text-gray-600">첫 메시지를 보내보세요</p>
           </div>
         ) : (

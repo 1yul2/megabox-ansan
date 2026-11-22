@@ -38,6 +38,9 @@ export const chatService = {
       data: { enabled },
     }),
 
+  setPinned: (roomId: number, pinned: boolean) =>
+    apiClient.patch<ChatRoomDetailDTO>({ url: `${BASE}/rooms/${roomId}/pin`, data: { pinned } }),
+
   messages: (roomId: number, beforeId?: number) =>
     apiClient.get<ChatMessagePageDTO>({
       url: `${BASE}/rooms/${roomId}/messages`,

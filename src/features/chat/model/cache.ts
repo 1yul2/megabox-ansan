@@ -98,3 +98,14 @@ export function flattenMessages(data: MessagesData | undefined): ChatMessageDTO[
   for (let i = data.pages.length - 1; i >= 0; i -= 1) out.push(...data.pages[i].items);
   return out;
 }
+
+/** 고정한 방 → 그 외, 각 그룹 안에서는 최근 대화 순 (서버 정렬과 동일 — 낙관적 갱신 후에도 순서 보장) */
+export function sortRooms<T extends { is_pinned: boolean; last_message_at: string | null }>(
+  rooms: T[],
+): T[] {
+  const time = (r: T) => (r.last_message_at ? new Date(r.last_message_at).getTime() : 0);
+  return [...rooms].sort((a, b) => {
+    if (a.is_pinned !== b.is_pinned) return a.is_pinned ? -1 : 1;
+    return time(b) - time(a);
+  });
+}

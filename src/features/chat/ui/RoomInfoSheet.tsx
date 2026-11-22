@@ -1,8 +1,9 @@
-import { Bell, BellOff, Check, Crown, LogOut, Pencil, UserPlus, X } from 'lucide-react';
+import { Bell, BellOff, Check, Crown, LogOut, Pencil, Pin, UserPlus, X } from 'lucide-react';
 import { useState } from 'react';
 
 import {
   useChatNotificationMutation,
+  useChatPinMutation,
   useLeaveChatMutation,
   useRenameChatRoomMutation,
 } from '../api/queries';
@@ -41,6 +42,7 @@ export const RoomInfoSheet = ({
 
   const rename = useRenameChatRoomMutation(room.id);
   const notification = useChatNotificationMutation(room.id);
+  const pin = useChatPinMutation();
   const leave = useLeaveChatMutation(room.id);
 
   const canRename = room.is_global ? isAdmin : room.is_owner || isAdmin;
@@ -127,6 +129,34 @@ export const RoomInfoSheet = ({
           </div>
 
           <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+            {/* 상단 고정 */}
+            <label className="flex cursor-pointer items-center gap-3 rounded-2xl bg-white p-4 ring-1 ring-black/[0.04]">
+              <span
+                className={cn(
+                  'flex size-10 items-center justify-center rounded-xl transition-colors',
+                  room.is_pinned
+                    ? 'bg-mega-secondary/10 text-mega-secondary'
+                    : 'bg-gray-100 text-gray-400',
+                )}
+              >
+                <Pin className={cn('size-5 rotate-45', room.is_pinned && 'fill-current')} />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-[15px] font-semibold text-gray-900">상단 고정</span>
+                <span className="text-xs text-gray-400">
+                  {room.is_pinned
+                    ? '새 메시지가 와도 고정한 방이 항상 위에 있어요'
+                    : '채팅 목록 맨 위에 고정해요'}
+                </span>
+              </span>
+              <Switch
+                checked={room.is_pinned}
+                disabled={pin.isPending}
+                onCheckedChange={(v) => pin.mutate({ roomId: room.id, pinned: v })}
+                aria-label="상단 고정"
+              />
+            </label>
+
             {/* 알림 */}
             <label className="flex cursor-pointer items-center gap-3 rounded-2xl bg-white p-4 ring-1 ring-black/[0.04]">
               <span
